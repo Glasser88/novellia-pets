@@ -1,0 +1,79 @@
+// Prisma schema for Novellia Pets.
+//
+// Design notes:
+// - `User` exists so every pet has an owner even though auth is out of scope;
+//   adding auth later only adds a session, not a schema change.
+// - `Pet.species` is a DB enum (closed set). `MedicalRecord.type` is a plain
+//   string keyed into the application-level record-type registry
+//   (src/shared/recordTypes) so new record types need no migration.
+// - Fields shared by every record are real columns; type-specific fields live
+//   in `data` (jsonb) and are validated by the registry. `dueDate` is a
+//   "promoted" field the registry derives from `data` so the dashboard can
+//   query it without unpacking JSON.
+// - Dates that are calendar dates (not instants) use @db.Date.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid(7))
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  pets Pet[]
+}
+
+enum Species {
+  DOG
+  CAT
+  BIRD
+  RABBIT
+  REPTILE
+  OTHER
+}
+
+model Pet {
+  id          String    @id @default(uuid(7))
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  species     Species
+  breed       String?
+  dateOfBirth DateTime? @db.Date
+  weightKg    Float?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  records MedicalRecord[]
+
+  @@index([ownerId])
+}
+
+model MedicalRecord {
+  id        String    @id @default(uuid(7))
+  petId     String
+  pet       Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  /// Key into the record-type registry (e.g. "vaccination"). Not a DB enum
+  /// so that new types can be added without a migration.
+  type      String
+  title     String
+  date      DateTime  @db.Date
+  notes     String?
+  /// Type-specific fields, validated against the registry's Zod schema.
+  data      Json      @default("{}")
+  /// Derived from `data` by the registry on write (e.g. next vaccination due).
+  dueDate   DateTime? @db.Date
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([petId, date])
+  @@index([dueDate])
+}
