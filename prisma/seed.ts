@@ -4,8 +4,10 @@
  * same way user-entered data does.
  *
  * Dates are relative to today so the dashboard always has something overdue,
- * something due soon and something further out. Re-running replaces the demo
- * user's data.
+ * something due soon and something further out.
+ *
+ * Safe to run on every start: it does nothing if the demo owner already has
+ * pets. Set SEED_FORCE=1 to wipe and reload the demo data.
  */
 import "dotenv/config";
 import { prisma } from "@/server/db";
@@ -24,6 +26,12 @@ type SeedRecord = Omit<RecordInput, "data"> & { data?: Record<string, unknown> }
 
 async function main() {
   const ownerId = await getCurrentUserId();
+
+  const existing = await prisma.pet.count({ where: { ownerId } });
+  if (existing > 0 && !process.env.SEED_FORCE) {
+    console.log(`Demo owner already has ${existing} pets; skipping seed (SEED_FORCE=1 to reload).`);
+    return;
+  }
 
   // Start clean: records cascade from pets.
   await prisma.pet.deleteMany({ where: { ownerId } });

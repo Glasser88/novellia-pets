@@ -16,5 +16,18 @@ services:
       timeout: 5s
       retries: 10
 
+  # The app in a container. For day-to-day development run only `db` here and
+  # the app on the host with `make dev`; this service is the one-command demo.
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Inside the Compose network the database is reached by service name.
+      DATABASE_URL: postgresql://novellia:novellia@db:5432/novellia
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
