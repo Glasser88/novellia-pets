@@ -31,7 +31,13 @@ export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((parseIsoDate(toIso).getTime() - parseIsoDate(fromIso).getTime()) / DAY_MS);
 }
 
-/** "3 years" / "8 months" / "3 weeks" from a date of birth. */
+/**
+ * "3 years" / "8 months" / "3 weeks" from a date of birth.
+ *
+ * Deliberately approximate (30-day months, 365-day years): it is a display
+ * hint, not a dosing input. If exact calendar ages were ever needed, this is
+ * the one place to swap in date-fns' differenceInYears/differenceInMonths.
+ */
 export function formatAge(dateOfBirth: string, today = todayIso()): string {
   const days = daysBetween(dateOfBirth, today);
   if (days < 0) return "not born yet";
