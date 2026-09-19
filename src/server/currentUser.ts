@@ -15,5 +15,6 @@ export async function getCurrentUserId(): Promise<string> {
     create: DEMO_USER,
     select: { id: true },
   });
+
   return user.id;
 }

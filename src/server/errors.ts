@@ -4,6 +4,7 @@
  */
 export class NotFoundError extends Error {
   readonly status = 404;
+
   constructor(entity: string, id: string) {
     super(`${entity} ${id} not found`);
     this.name = "NotFoundError";
@@ -12,6 +13,7 @@ export class NotFoundError extends Error {
 
 export class BadRequestError extends Error {
   readonly status = 400;
+
   constructor(message: string) {
     super(message);
     this.name = "BadRequestError";

@@ -30,12 +30,15 @@ export function errorResponse(err: unknown): NextResponse {
       { status: 400 },
     );
   }
+
   if (err instanceof UnknownRecordTypeError) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
+
   if (err instanceof NotFoundError || err instanceof BadRequestError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
+
   console.error(err);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
@@ -43,10 +46,12 @@ export function errorResponse(err: unknown): NextResponse {
 /** Parse and validate a JSON body. Malformed JSON is a 400, not a 500. */
 export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<T> {
   let json: unknown;
+
   try {
     json = await req.json();
   } catch {
     throw new BadRequestError("Request body must be valid JSON");
   }
+
   return schema.parse(json);
 }
