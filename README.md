@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Novellia Pets
 
-## Getting Started
+An MVP for pet owners to track their pets and their pets' medical records, with a dashboard that surfaces upcoming and overdue care.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 + shadcn/ui · Prisma 7 · PostgreSQL 16 · Zod · Vitest
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Run it
+
+The only requirement is Docker.
+
+```sh
+make up          # builds the app, starts Postgres, migrates, seeds demo data, serves on http://localhost:3000
+make down        # stops everything
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For development (app on the host with hot reload, Postgres in Docker), you also need Node 22:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```sh
+make dev         # creates .env, starts Postgres, runs `next dev`
+make seed        # (re)loads the demo data
+make check       # lint + typecheck + format check + tests
+make help        # everything else
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What it does
 
-## Learn More
+- Add, view, edit and delete pets.
+- Add, view, edit and delete medical records for a pet. Five record types ship: vaccination, medication, vet visit, allergy, weight check.
+- Dashboard showing every pet's status, plus what is overdue and what is due in the next 30 days.
+- Search pets by name or breed; search and filter a pet's records by title and type.
 
-To learn more about Next.js, take a look at the following resources:
+## How it is put together
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/            Next.js routes. Pages are Server Components that read via services;
+                  app/api/** are thin REST handlers that validate and call services.
+  server/         Everything that touches the database: Prisma client, services
+                  (pets, records, care), typed errors, the auth seam (currentUser).
+  shared/         Code used by both server and client: Zod input schemas and the
+                  record-type registry.
+  components/     React components (shadcn/ui primitives under components/ui).
+  lib/            Small client-side helpers (API fetch wrapper, date formatting).
+prisma/           Schema, migrations, seed.
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The dependency direction is `app → server → shared`, and `components → shared`. Nothing in `shared` imports from `server` or `app`.
 
-## Deploy on Vercel
+### The record-type registry
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`src/shared/recordTypes/` is the single source of truth for what a record type is. Each type is one file that declares its fields:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```ts
+export const vaccination = defineRecordType({
+  key: "vaccination",
+  label: "Vaccination",
+  pluralLabel: "Vaccinations",
+  description: "A vaccine dose administered, with when the next one is due.",
+  fields: {
+    vaccine: { kind: "text", label: "Vaccine", required: true },
+    nextDueDate: { kind: "date", label: "Next dose due" },
+  },
+  dueDate: (data) => data.nextDueDate ?? null,
+  summary: (data) => data.vaccine,
+});
+```
+
+`defineRecordType` derives a strict Zod schema from `fields`. The API validates incoming `data` against it, the form renders inputs from it, the table shows `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type.
+
+**To add a record type:** create `src/shared/recordTypes/<type>.ts` and add it to the list in `index.ts`. No migration, route or component changes.
+
+### Data model
+
+- `User` → `Pet` → `MedicalRecord`, with cascading deletes.
+- `MedicalRecord` keeps the fields every record shares (`type`, `title`, `date`, `notes`) as real columns and the type-specific fields in a `data` jsonb column validated by the registry. `dueDate` is derived from `data` on every write so the dashboard can query it with an index instead of unpacking JSON.
+- `Pet.species` is a database enum (a closed set); `MedicalRecord.type` is a string keyed into the registry (an open set).
+
+See [DECISIONS.md](DECISIONS.md) for the reasoning behind these and other choices, and what I would do differently.
+
+## API
+
+All routes act as a single demo owner (see "Authentication" in DECISIONS.md).
+
+| Method | Path | |
+|---|---|---|
+| GET, POST | `/api/pets` | list (`?q=`) / create |
+| GET, PATCH, DELETE | `/api/pets/:petId` | read / partial update / delete |
+| GET, POST | `/api/pets/:petId/records` | list (`?type=`, `?q=`) / create |
+| GET, PATCH, DELETE | `/api/pets/:petId/records/:recordId` | read / partial update / delete |
+
+Validation errors return `400 { error, issues: [{ path, message }] }`; unknown ids return `404`.
+
+## Tests
+
+`npm test` runs unit tests for the pure logic: the record-type registry and schema derivation, input schemas, and the care-status rules. Manual API checks are in the commit history; there are no database integration tests (see DECISIONS.md).
