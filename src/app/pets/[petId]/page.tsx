@@ -40,7 +40,11 @@ export default async function PetPage({ params }: PageProps<"/pets/[petId]">) {
           </h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`/pets/${pet.id}/edit`} />}>
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href={`/pets/${pet.id}/edit`} />}
+          >
             <PencilIcon /> Edit
           </Button>
           <DeletePetButton petId={pet.id} petName={pet.name} />

@@ -13,7 +13,7 @@ export default async function PetsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Pets</h1>
-        <Button render={<Link href="/pets/new" />}>
+        <Button nativeButton={false} render={<Link href="/pets/new" />}>
           <PlusIcon /> Add pet
         </Button>
       </div>
