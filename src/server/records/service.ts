@@ -1,7 +1,7 @@
 import type { MedicalRecord, Prisma } from "@/generated/prisma/client";
 import { parseRecordData } from "@/shared/recordTypes";
 import type { RecordDto, RecordInput, RecordUpdate } from "@/shared/schemas/record";
-import { fromIsoDate, toIsoDate } from "../dates";
+import { fromIsoDate, fromIsoDateOrNull, toIsoDate, toIsoDateOrNull } from "../dates";
 import { prisma } from "../db";
 import { NotFoundError } from "../errors";
 import { getPet } from "../pets/service";
@@ -12,10 +12,12 @@ export function toRecordDto(record: MedicalRecord): RecordDto {
     petId: record.petId,
     type: record.type,
     title: record.title,
-    date: toIsoDate(record.date)!,
+    date: toIsoDate(record.date),
     notes: record.notes,
-    data: (record.data ?? {}) as Record<string, unknown>,
-    dueDate: toIsoDate(record.dueDate),
+    // Prisma types the jsonb column as generic JSON; the registry validated
+    // it as an object on the way in.
+    data: record.data as Record<string, unknown>,
+    dueDate: toIsoDateOrNull(record.dueDate),
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -32,8 +34,12 @@ export async function listRecords(
   options: ListRecordsOptions = {},
 ): Promise<RecordDto[]> {
   await getPet(ownerId, petId);
+
+  const where: Prisma.MedicalRecordWhereInput = { petId };
+  if (options.type) where.type = options.type;
+
   const records = await prisma.medicalRecord.findMany({
-    where: { petId, ...(options.type && { type: options.type }) },
+    where,
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
   return records.map(toRecordDto);
@@ -44,6 +50,7 @@ export async function getRecord(
   petId: string,
   recordId: string,
 ): Promise<RecordDto> {
+  // `pet: { ownerId }` filters through the relation, so this is one query.
   const record = await prisma.medicalRecord.findFirst({
     where: { id: recordId, petId, pet: { ownerId } },
   });
@@ -57,17 +64,19 @@ export async function createRecord(
   input: RecordInput,
 ): Promise<RecordDto> {
   await getPet(ownerId, petId);
+
+  // The registry validates `data` for this type and derives the due date.
   const { data, dueDate } = parseRecordData(input.type, input.data, input.date);
+
   const record = await prisma.medicalRecord.create({
     data: {
       petId,
       type: input.type,
       title: input.title,
-      date: fromIsoDate(input.date)!,
+      date: fromIsoDate(input.date),
       notes: input.notes,
-      // Validated by the registry; Prisma only knows it is JSON.
       data: data as Prisma.InputJsonObject,
-      dueDate: fromIsoDate(dueDate),
+      dueDate: fromIsoDateOrNull(dueDate),
     },
   });
   return toRecordDto(record);
@@ -80,24 +89,27 @@ export async function updateRecord(
   input: RecordUpdate,
 ): Promise<RecordDto> {
   const existing = await getRecord(ownerId, petId, recordId);
-  const date = input.date ?? existing.date;
-  // Re-derive dueDate whenever the inputs it depends on change.
-  const derived =
-    input.data !== undefined || input.date !== undefined
-      ? parseRecordData(existing.type, input.data ?? existing.data, date)
-      : null;
-  const record = await prisma.medicalRecord.update({
-    where: { id: recordId },
-    data: {
-      ...(input.title !== undefined && { title: input.title }),
-      ...(input.notes !== undefined && { notes: input.notes }),
-      ...(input.date !== undefined && { date: fromIsoDate(input.date)! }),
-      ...(derived && {
-        data: derived.data as Prisma.InputJsonObject,
-        dueDate: fromIsoDate(derived.dueDate),
-      }),
-    },
-  });
+
+  const changes: Prisma.MedicalRecordUpdateInput = {};
+  if (input.title !== undefined) changes.title = input.title;
+  if (input.notes !== undefined) changes.notes = input.notes;
+  if (input.date !== undefined) changes.date = fromIsoDate(input.date);
+
+  // dueDate depends on `data` and `date`, so re-validate and re-derive it
+  // whenever either changes. `data` is always replaced as a whole.
+  const dataChanged = input.data !== undefined;
+  const dateChanged = input.date !== undefined;
+  if (dataChanged || dateChanged) {
+    const { data, dueDate } = parseRecordData(
+      existing.type,
+      input.data ?? existing.data,
+      input.date ?? existing.date,
+    );
+    changes.data = data as Prisma.InputJsonObject;
+    changes.dueDate = fromIsoDateOrNull(dueDate);
+  }
+
+  const record = await prisma.medicalRecord.update({ where: { id: recordId }, data: changes });
   return toRecordDto(record);
 }
 

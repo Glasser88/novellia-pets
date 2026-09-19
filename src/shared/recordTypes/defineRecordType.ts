@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { emptyToUndefined, isoDate } from "@/shared/schemas/common";
 
 /**
- * Declarative field definitions. A record type lists its fields once; the Zod
- * schema (validation) and the form (presentation) are both derived from them,
- * so they cannot drift apart.
+ * A field of a record type's `data` object. Each record type lists its fields
+ * once; the Zod validation schema and (later) the form UI are both built from
+ * this list, so validation and presentation cannot drift apart.
  */
 export type FieldDef =
   | { kind: "text"; label: string; required?: boolean; placeholder?: string }
@@ -11,38 +12,43 @@ export type FieldDef =
   | { kind: "number"; label: string; required?: boolean; min?: number; max?: number; unit?: string }
   | { kind: "date"; label: string; required?: boolean }
   | { kind: "boolean"; label: string }
-  | {
-      kind: "select";
-      label: string;
-      required?: boolean;
-      options: readonly { value: string; label: string }[];
-    };
+  | { kind: "select"; label: string; required?: boolean; options: readonly SelectOption[] };
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export type FieldKind = FieldDef["kind"];
 
-/** Calendar dates are stored as ISO "YYYY-MM-DD" strings inside `data`. */
-export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
-
-type ValueOf<F extends FieldDef> = F["kind"] extends "number"
+/** The runtime value a field kind holds inside `data`. */
+type FieldValue<F extends FieldDef> = F["kind"] extends "number"
   ? number
   : F["kind"] extends "boolean"
     ? boolean
-    : F["kind"] extends "select"
-      ? F extends { options: readonly { value: infer V }[] }
-        ? V
-        : string
-      : string;
+    : string; // text, textarea, date (ISO string) and select all hold strings
 
-/** The TypeScript shape of `data` for a set of field definitions. */
+/**
+ * The TypeScript type of `data` for a given set of fields, so that `dueDate`,
+ * `summary` and `refine` callbacks get proper autocomplete.
+ *
+ * In words: required fields (and booleans, which default to false) are
+ * present; every other field is optional.
+ */
 export type DataOf<Fields extends Record<string, FieldDef>> = {
-  [
-    K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? K : never
-  ]: ValueOf<Fields[K]>;
+  [K in RequiredKeys<Fields>]: FieldValue<Fields[K]>;
 } & {
-  [
-    K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? never : K
-  ]?: ValueOf<Fields[K]>;
+  [K in OptionalKeys<Fields>]?: FieldValue<Fields[K]>;
 };
+
+type RequiredKeys<Fields extends Record<string, FieldDef>> = {
+  [K in keyof Fields]: Fields[K] extends { required: true } | { kind: "boolean" } ? K : never;
+}[keyof Fields];
+
+type OptionalKeys<Fields extends Record<string, FieldDef>> = Exclude<
+  keyof Fields,
+  RequiredKeys<Fields>
+>;
 
 export interface RecordTypeConfig<Fields extends Record<string, FieldDef>> {
   /** Stable key stored in MedicalRecord.type. Never rename once data exists. */
@@ -52,7 +58,7 @@ export interface RecordTypeConfig<Fields extends Record<string, FieldDef>> {
   description: string;
   fields: Fields;
   /**
-   * Optional cross-field validation the field DSL cannot express
+   * Optional cross-field validation the field definitions cannot express
    * (e.g. "endDate must be after startDate").
    */
   refine?: (data: DataOf<Fields>, ctx: z.RefinementCtx) => void;
@@ -62,58 +68,69 @@ export interface RecordTypeConfig<Fields extends Record<string, FieldDef>> {
    * can query it without unpacking JSON. Types with no follow-up omit this.
    */
   dueDate?: (data: DataOf<Fields>, recordDate: string) => string | null;
-  /** One-line summary for list views, e.g. "Rabies · next due 2027-03-01". */
+  /** One-line summary for list views, e.g. "Rabies". */
   summary?: (data: DataOf<Fields>) => string;
 }
 
+/** A registered record type: the config plus the Zod schema derived from its fields. */
 export interface RecordType<
   Fields extends Record<string, FieldDef> = Record<string, FieldDef>,
 > extends RecordTypeConfig<Fields> {
   schema: z.ZodType<DataOf<Fields>>;
 }
 
+/** Build the Zod validator for one field. */
 function fieldSchema(field: FieldDef): z.ZodTypeAny {
-  let base: z.ZodTypeAny;
+  // Booleans are never "missing": an unchecked checkbox is false.
+  if (field.kind === "boolean") {
+    return z.boolean().default(false);
+  }
+
+  let schema: z.ZodTypeAny;
   switch (field.kind) {
     case "text":
     case "textarea":
-      base = z.string().trim().max(2000);
+      schema = field.required
+        ? z.string().trim().min(1, "Required").max(2000)
+        : z.string().trim().max(2000);
       break;
-    case "number": {
-      let n = z.number().finite();
-      if (field.min !== undefined) n = n.min(field.min);
-      if (field.max !== undefined) n = n.max(field.max);
-      base = n;
+    case "number":
+      schema = z.number().finite();
+      if (field.min !== undefined) schema = (schema as z.ZodNumber).min(field.min);
+      if (field.max !== undefined) schema = (schema as z.ZodNumber).max(field.max);
       break;
-    }
     case "date":
-      base = isoDate;
+      schema = isoDate;
       break;
-    case "boolean":
-      return z.boolean().default(false);
     case "select":
-      base = z.enum(field.options.map((o) => o.value) as [string, ...string[]]);
+      schema = z.enum(field.options.map((option) => option.value) as [string, ...string[]]);
       break;
   }
-  if ("required" in field && field.required) {
-    return field.kind === "text" || field.kind === "textarea"
-      ? (base as z.ZodString).min(1, "Required")
-      : base;
+
+  if (field.required) {
+    return schema;
   }
-  // Optional fields: accept missing, null, or "" (from empty form inputs) as absent.
-  return z.preprocess((v) => (v === "" || v === null ? undefined : v), base.optional());
+  return z.preprocess(emptyToUndefined, schema.optional());
 }
 
+/**
+ * Declare a record type. Builds a strict object schema from `fields` (unknown
+ * keys are rejected so typos never persist) and attaches the optional
+ * cross-field `refine`.
+ */
 export function defineRecordType<const Fields extends Record<string, FieldDef>>(
   config: RecordTypeConfig<Fields>,
 ): RecordType<Fields> {
-  const shape = Object.fromEntries(
-    Object.entries(config.fields).map(([name, field]) => [name, fieldSchema(field)]),
-  );
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const [name, field] of Object.entries(config.fields)) {
+    shape[name] = fieldSchema(field);
+  }
+
   let schema: z.ZodTypeAny = z.object(shape).strict();
   if (config.refine) {
     const refine = config.refine;
     schema = schema.superRefine((data, ctx) => refine(data as DataOf<Fields>, ctx));
   }
+
   return { ...config, schema: schema as z.ZodType<DataOf<Fields>> };
 }

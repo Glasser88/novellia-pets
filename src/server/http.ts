@@ -10,7 +10,7 @@ type Handler<Ctx> = (req: Request, ctx: Ctx) => Promise<Response>;
  * responses with the right status. Anything unexpected is logged and hidden
  * behind a 500.
  */
-export function route<Ctx>(handler: Handler<Ctx>): Handler<Ctx> {
+export function withErrorHandling<Ctx>(handler: Handler<Ctx>): Handler<Ctx> {
   return async (req, ctx) => {
     try {
       return await handler(req, ctx);

@@ -1,6 +1,6 @@
-import type { Pet } from "@/generated/prisma/client";
+import type { Pet, Prisma } from "@/generated/prisma/client";
 import type { PetDto, PetInput, PetUpdate } from "@/shared/schemas/pet";
-import { fromIsoDate, toIsoDate } from "../dates";
+import { fromIsoDateOrNull, toIsoDateOrNull } from "../dates";
 import { prisma } from "../db";
 import { NotFoundError } from "../errors";
 
@@ -10,7 +10,7 @@ export function toPetDto(pet: Pet): PetDto {
     name: pet.name,
     species: pet.species,
     breed: pet.breed,
-    dateOfBirth: toIsoDate(pet.dateOfBirth),
+    dateOfBirth: toIsoDateOrNull(pet.dateOfBirth),
     weightKg: pet.weightKg,
     notes: pet.notes,
     createdAt: pet.createdAt.toISOString(),
@@ -32,18 +32,32 @@ export async function getPet(ownerId: string, petId: string): Promise<PetDto> {
 
 export async function createPet(ownerId: string, input: PetInput): Promise<PetDto> {
   const pet = await prisma.pet.create({
-    data: { ...input, ownerId, dateOfBirth: fromIsoDate(input.dateOfBirth) },
+    data: {
+      ownerId,
+      name: input.name,
+      species: input.species,
+      breed: input.breed,
+      dateOfBirth: fromIsoDateOrNull(input.dateOfBirth),
+      weightKg: input.weightKg,
+      notes: input.notes,
+    },
   });
   return toPetDto(pet);
 }
 
 export async function updatePet(ownerId: string, petId: string, input: PetUpdate): Promise<PetDto> {
   await getPet(ownerId, petId); // 404 before touching anything
-  const { dateOfBirth, ...rest } = input;
-  const pet = await prisma.pet.update({
-    where: { id: petId },
-    data: { ...rest, ...(dateOfBirth !== undefined && { dateOfBirth: fromIsoDate(dateOfBirth) }) },
-  });
+
+  // Only fields present in the input are changed; absent fields are left alone.
+  const changes: Prisma.PetUpdateInput = {};
+  if (input.name !== undefined) changes.name = input.name;
+  if (input.species !== undefined) changes.species = input.species;
+  if (input.breed !== undefined) changes.breed = input.breed;
+  if (input.dateOfBirth !== undefined) changes.dateOfBirth = fromIsoDateOrNull(input.dateOfBirth);
+  if (input.weightKg !== undefined) changes.weightKg = input.weightKg;
+  if (input.notes !== undefined) changes.notes = input.notes;
+
+  const pet = await prisma.pet.update({ where: { id: petId }, data: changes });
   return toPetDto(pet);
 }
 
