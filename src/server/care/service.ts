@@ -20,7 +20,14 @@ export async function listCare(ownerId: string, today: string): Promise<CareItem
   });
 }
 
-/** Fetch the three inputs in parallel, then apply the pure dashboard rules. */
+/**
+ * Fetch the three inputs in parallel, then apply the pure dashboard rules.
+ *
+ * Promise.all is deliberate: the per-pet statuses and counts are computed
+ * from all three results, so a partial dashboard would be wrong rather than
+ * merely incomplete. Independent panels would instead be separate Server
+ * Components with their own Suspense boundaries.
+ */
 export async function getDashboard(ownerId: string, today: string): Promise<Dashboard> {
   const [pets, care, recordCounts] = await Promise.all([
     prisma.pet.findMany({ where: { ownerId }, orderBy: { name: "asc" } }),
