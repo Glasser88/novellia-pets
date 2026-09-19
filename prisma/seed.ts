@@ -15,6 +15,7 @@ import { createPet } from "@/server/pets/service";
 import { createRecord } from "@/server/records/service";
 import { getCurrentUserId } from "@/server/currentUser";
 import type { RecordInput } from "@/shared/schemas/record";
+import { plural } from "@/lib/format";
 
 function daysFromToday(days: number): string {
   const date = new Date();
@@ -29,7 +30,9 @@ async function main() {
 
   const existing = await prisma.pet.count({ where: { ownerId } });
   if (existing > 0 && !process.env.SEED_FORCE) {
-    console.log(`Demo owner already has ${existing} pets; skipping seed (SEED_FORCE=1 to reload).`);
+    console.log(
+      `Demo owner already has ${plural(existing, "pet")}; skipping seed (SEED_FORCE=1 to reload).`,
+    );
     return;
   }
 

@@ -83,12 +83,12 @@ See [DECISIONS.md](DECISIONS.md) for the reasoning behind these and other choice
 
 All routes act as a single demo owner (see "Authentication" in DECISIONS.md).
 
-| Method | Path | |
-|---|---|---|
-| GET, POST | `/api/pets` | list (`?q=`) / create |
-| GET, PATCH, DELETE | `/api/pets/:petId` | read / partial update / delete |
-| GET, POST | `/api/pets/:petId/records` | list (`?type=`, `?q=`) / create |
-| GET, PATCH, DELETE | `/api/pets/:petId/records/:recordId` | read / partial update / delete |
+| Method             | Path                                 |                                 |
+| ------------------ | ------------------------------------ | ------------------------------- |
+| GET, POST          | `/api/pets`                          | list (`?q=`) / create           |
+| GET, PATCH, DELETE | `/api/pets/:petId`                   | read / partial update / delete  |
+| GET, POST          | `/api/pets/:petId/records`           | list (`?type=`, `?q=`) / create |
+| GET, PATCH, DELETE | `/api/pets/:petId/records/:recordId` | read / partial update / delete  |
 
 Validation errors return `400 { error, issues: [{ path, message }] }`; unknown ids return `404`.
 
