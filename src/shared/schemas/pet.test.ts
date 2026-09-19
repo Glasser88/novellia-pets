@@ -7,7 +7,7 @@ describe("petInputSchema", () => {
     expect(r.success).toBe(true);
   });
 
-  it("normalises empty form values to undefined", () => {
+  it("treats blank form values as null so edits can clear a field", () => {
     const r = petInputSchema.parse({
       name: " Milo ",
       species: "CAT",
@@ -15,7 +15,18 @@ describe("petInputSchema", () => {
       dateOfBirth: "",
       weightKg: "",
     });
-    expect(r).toEqual({ name: "Milo", species: "CAT" });
+    expect(r).toEqual({
+      name: "Milo",
+      species: "CAT",
+      breed: null,
+      dateOfBirth: null,
+      weightKg: null,
+    });
+  });
+
+  it("leaves fields that are not sent as undefined", () => {
+    const r = petInputSchema.parse({ name: "Milo", species: "CAT" });
+    expect(r.breed).toBeUndefined();
   });
 
   it("coerces numeric strings for weight", () => {

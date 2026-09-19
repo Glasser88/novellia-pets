@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Species } from "@/generated/prisma/enums";
-import { optionalIsoDate, optionalText } from "./common";
+import { emptyToNull, optionalIsoDate, optionalText } from "./common";
 
 export const speciesValues = Object.values(Species) as [Species, ...Species[]];
 
@@ -18,10 +18,7 @@ export const petInputSchema = z.object({
   species: z.enum(speciesValues),
   breed: optionalText(100),
   dateOfBirth: optionalIsoDate,
-  weightKg: z.preprocess(
-    (v) => (v === "" || v === null ? undefined : v),
-    z.coerce.number().positive().max(500).optional(),
-  ),
+  weightKg: z.preprocess(emptyToNull, z.coerce.number().positive().max(500).nullable().optional()),
   notes: optionalText(2000),
 });
 
