@@ -56,3 +56,16 @@ export function parseRecordData(
   const dueDate = type.dueDate ? type.dueDate(parsed, recordDate) : null;
   return { data: parsed, dueDate };
 }
+
+/**
+ * One-line summary of a stored record's `data` for list views, or undefined
+ * when the type defines none. `data` came through parseRecordData on the way
+ * in, so it matches the type's shape.
+ */
+export function summarizeRecordData(
+  typeKey: string,
+  data: Record<string, unknown>,
+): string | undefined {
+  const type = getRecordType(typeKey);
+  return type.summary?.(data as Parameters<NonNullable<typeof type.summary>>[0]);
+}

@@ -5,6 +5,7 @@ import {
   listRecordTypes,
   parseRecordData,
   recordTypeKeys,
+  summarizeRecordData,
   UnknownRecordTypeError,
 } from ".";
 import { medication } from "./medication";
@@ -133,5 +134,13 @@ describe("parseRecordData", () => {
   it("throws for unknown types and invalid data", () => {
     expect(() => parseRecordData("bloodwork", {}, "2026-03-01")).toThrow(UnknownRecordTypeError);
     expect(() => parseRecordData("vaccination", {}, "2026-03-01")).toThrow();
+  });
+});
+
+describe("summarizeRecordData", () => {
+  it("uses the type's summary when it has one", () => {
+    expect(summarizeRecordData("allergy", { allergen: "Chicken", severity: "mild" })).toBe(
+      "Chicken (mild)",
+    );
   });
 });

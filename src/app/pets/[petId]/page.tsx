@@ -1,24 +1,33 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PencilIcon } from "lucide-react";
-import { DeletePetButton } from "@/components/pets/delete-pet-button";
+import { PencilIcon, PlusIcon } from "lucide-react";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RecordTable } from "@/components/records/record-table";
+import { RecordTypeFilter } from "@/components/records/record-type-filter";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatAge, formatDate } from "@/lib/format";
 import { getCurrentUserId } from "@/server/currentUser";
 import { NotFoundError } from "@/server/errors";
 import { getPet } from "@/server/pets/service";
+import { listRecords } from "@/server/records/service";
+import { recordTypes } from "@/shared/recordTypes";
 import { speciesLabels } from "@/shared/schemas/pet";
 
-export default async function PetPage({ params }: PageProps<"/pets/[petId]">) {
+export default async function PetPage({ params, searchParams }: PageProps<"/pets/[petId]">) {
   const { petId } = await params;
+  const { type } = await searchParams;
   const ownerId = await getCurrentUserId();
+
+  // Only filter by a type the registry knows; anything else shows all.
+  const typeFilter = typeof type === "string" && recordTypes.has(type) ? type : undefined;
 
   const pet = await getPet(ownerId, petId).catch((error) => {
     if (error instanceof NotFoundError) notFound();
     throw error;
   });
+  const records = await listRecords(ownerId, petId, { type: typeFilter });
 
   const facts: [string, string | null][] = [
     ["Species", speciesLabels[pet.species]],
@@ -47,7 +56,12 @@ export default async function PetPage({ params }: PageProps<"/pets/[petId]">) {
           >
             <PencilIcon /> Edit
           </Button>
-          <DeletePetButton petId={pet.id} petName={pet.name} />
+          <ConfirmDeleteButton
+            apiPath={`/api/pets/${pet.id}`}
+            redirectTo="/pets"
+            title={`Delete ${pet.name}?`}
+            description={`This removes ${pet.name} and all of their medical records. This cannot be undone.`}
+          />
         </div>
       </div>
 
@@ -70,7 +84,16 @@ export default async function PetPage({ params }: PageProps<"/pets/[petId]">) {
         </CardContent>
       </Card>
 
-      {/* Medical records section comes next. */}
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold">Medical records</h2>
+          <Button nativeButton={false} render={<Link href={`/pets/${pet.id}/records/new`} />}>
+            <PlusIcon /> Add record
+          </Button>
+        </div>
+        <RecordTypeFilter basePath={`/pets/${pet.id}`} selected={typeFilter} />
+        <RecordTable petId={pet.id} records={records} />
+      </section>
     </div>
   );
 }
