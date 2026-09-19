@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { defineRecordType, getRecordType, listRecordTypes, recordTypeKeys, UnknownRecordTypeError } from ".";
+import {
+  defineRecordType,
+  getRecordType,
+  listRecordTypes,
+  recordTypeKeys,
+  UnknownRecordTypeError,
+} from ".";
 import { medication } from "./medication";
 import { vaccination } from "./vaccination";
 
 describe("registry", () => {
   it("has unique, stable keys", () => {
     expect(new Set(recordTypeKeys).size).toBe(recordTypeKeys.length);
-    expect(recordTypeKeys).toEqual(["vaccination", "medication", "vet_visit", "allergy", "weight_check"]);
+    expect(recordTypeKeys).toEqual([
+      "vaccination",
+      "medication",
+      "vet_visit",
+      "allergy",
+      "weight_check",
+    ]);
   });
 
   it("looks up types by key and rejects unknown keys", () => {
@@ -35,7 +47,11 @@ describe("derived schemas", () => {
   });
 
   it("treats empty strings from forms as absent for optional fields", () => {
-    const result = vaccination.schema.safeParse({ vaccine: "Rabies", manufacturer: "", nextDueDate: "" });
+    const result = vaccination.schema.safeParse({
+      vaccine: "Rabies",
+      manufacturer: "",
+      nextDueDate: "",
+    });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.nextDueDate).toBeUndefined();
   });
@@ -46,8 +62,12 @@ describe("derived schemas", () => {
   });
 
   it("validates date format and select options", () => {
-    expect(vaccination.schema.safeParse({ vaccine: "Rabies", nextDueDate: "03/01/2027" }).success).toBe(false);
-    expect(medication.schema.safeParse({ name: "Apoquel", frequency: "hourly" }).success).toBe(false);
+    expect(
+      vaccination.schema.safeParse({ vaccine: "Rabies", nextDueDate: "03/01/2027" }).success,
+    ).toBe(false);
+    expect(medication.schema.safeParse({ name: "Apoquel", frequency: "hourly" }).success).toBe(
+      false,
+    );
   });
 
   it("runs cross-field refinements", () => {
@@ -63,7 +83,9 @@ describe("derived schemas", () => {
 
 describe("dueDate", () => {
   it("is derived from the type's own rule", () => {
-    expect(vaccination.dueDate?.({ vaccine: "Rabies", nextDueDate: "2027-03-01" }, "2026-03-01")).toBe("2027-03-01");
+    expect(
+      vaccination.dueDate?.({ vaccine: "Rabies", nextDueDate: "2027-03-01" }, "2026-03-01"),
+    ).toBe("2027-03-01");
     expect(vaccination.dueDate?.({ vaccine: "Rabies" }, "2026-03-01")).toBeNull();
   });
 

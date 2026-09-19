@@ -11,7 +11,12 @@ export type FieldDef =
   | { kind: "number"; label: string; required?: boolean; min?: number; max?: number; unit?: string }
   | { kind: "date"; label: string; required?: boolean }
   | { kind: "boolean"; label: string }
-  | { kind: "select"; label: string; required?: boolean; options: readonly { value: string; label: string }[] };
+  | {
+      kind: "select";
+      label: string;
+      required?: boolean;
+      options: readonly { value: string; label: string }[];
+    };
 
 export type FieldKind = FieldDef["kind"];
 
@@ -30,9 +35,13 @@ type ValueOf<F extends FieldDef> = F["kind"] extends "number"
 
 /** The TypeScript shape of `data` for a set of field definitions. */
 export type DataOf<Fields extends Record<string, FieldDef>> = {
-  [K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? K : never]: ValueOf<Fields[K]>;
+  [
+    K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? K : never
+  ]: ValueOf<Fields[K]>;
 } & {
-  [K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? never : K]?: ValueOf<Fields[K]>;
+  [
+    K in keyof Fields as Fields[K] extends { required: true } | { kind: "boolean" } ? never : K
+  ]?: ValueOf<Fields[K]>;
 };
 
 export interface RecordTypeConfig<Fields extends Record<string, FieldDef>> {
@@ -57,8 +66,9 @@ export interface RecordTypeConfig<Fields extends Record<string, FieldDef>> {
   summary?: (data: DataOf<Fields>) => string;
 }
 
-export interface RecordType<Fields extends Record<string, FieldDef> = Record<string, FieldDef>>
-  extends RecordTypeConfig<Fields> {
+export interface RecordType<
+  Fields extends Record<string, FieldDef> = Record<string, FieldDef>,
+> extends RecordTypeConfig<Fields> {
   schema: z.ZodType<DataOf<Fields>>;
 }
 
@@ -86,7 +96,9 @@ function fieldSchema(field: FieldDef): z.ZodTypeAny {
       break;
   }
   if ("required" in field && field.required) {
-    return field.kind === "text" || field.kind === "textarea" ? (base as z.ZodString).min(1, "Required") : base;
+    return field.kind === "text" || field.kind === "textarea"
+      ? (base as z.ZodString).min(1, "Required")
+      : base;
   }
   // Optional fields: accept missing, null, or "" (from empty form inputs) as absent.
   return z.preprocess((v) => (v === "" || v === null ? undefined : v), base.optional());

@@ -26,7 +26,11 @@ export const medication = defineRecordType({
   },
   refine: (data, ctx) => {
     if (data.endDate && data.refillDueDate && data.refillDueDate > data.endDate) {
-      ctx.addIssue({ code: "custom", path: ["refillDueDate"], message: "Refill cannot be due after the end date" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["refillDueDate"],
+        message: "Refill cannot be due after the end date",
+      });
     }
   },
   dueDate: (data) => data.refillDueDate ?? null,
