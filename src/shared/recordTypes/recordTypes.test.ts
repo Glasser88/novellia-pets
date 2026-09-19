@@ -3,6 +3,7 @@ import {
   defineRecordType,
   getRecordType,
   listRecordTypes,
+  parseRecordData,
   recordTypeKeys,
   UnknownRecordTypeError,
 } from ".";
@@ -108,5 +109,29 @@ describe("defineRecordType", () => {
     });
     const parsed = bloodwork.schema.parse({ panel: "CBC" });
     expect(parsed).toEqual({ panel: "CBC", abnormal: false });
+  });
+});
+
+describe("parseRecordData", () => {
+  it("validates against the type and derives dueDate", () => {
+    const r = parseRecordData(
+      "vaccination",
+      { vaccine: "Rabies", nextDueDate: "2027-03-01" },
+      "2026-03-01",
+    );
+    expect(r).toEqual({
+      data: { vaccine: "Rabies", nextDueDate: "2027-03-01" },
+      dueDate: "2027-03-01",
+    });
+  });
+
+  it("returns null dueDate for types without a rule", () => {
+    const r = parseRecordData("allergy", { allergen: "Chicken", severity: "mild" }, "2026-03-01");
+    expect(r.dueDate).toBeNull();
+  });
+
+  it("throws for unknown types and invalid data", () => {
+    expect(() => parseRecordData("bloodwork", {}, "2026-03-01")).toThrow(UnknownRecordTypeError);
+    expect(() => parseRecordData("vaccination", {}, "2026-03-01")).toThrow();
   });
 });

@@ -40,3 +40,19 @@ export class UnknownRecordTypeError extends Error {
     this.name = "UnknownRecordTypeError";
   }
 }
+
+/**
+ * Validate `data` against its type's schema and derive the due date.
+ * This is the one place the registry is applied to incoming data; the
+ * server calls it on create and update.
+ */
+export function parseRecordData(
+  typeKey: string,
+  data: unknown,
+  recordDate: string,
+): { data: Record<string, unknown>; dueDate: string | null } {
+  const type = getRecordType(typeKey);
+  const parsed = type.schema.parse(data ?? {});
+  const dueDate = type.dueDate ? type.dueDate(parsed, recordDate) : null;
+  return { data: parsed, dueDate };
+}
