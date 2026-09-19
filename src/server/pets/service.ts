@@ -18,8 +18,21 @@ export function toPetDto(pet: Pet): PetDto {
   };
 }
 
-export async function listPets(ownerId: string): Promise<PetDto[]> {
-  const pets = await prisma.pet.findMany({ where: { ownerId }, orderBy: { name: "asc" } });
+export interface ListPetsOptions {
+  /** Case-insensitive match against name or breed. */
+  query?: string;
+}
+
+export async function listPets(ownerId: string, options: ListPetsOptions = {}): Promise<PetDto[]> {
+  const where: Prisma.PetWhereInput = { ownerId };
+  if (options.query) {
+    where.OR = [
+      { name: { contains: options.query, mode: "insensitive" } },
+      { breed: { contains: options.query, mode: "insensitive" } },
+    ];
+  }
+
+  const pets = await prisma.pet.findMany({ where, orderBy: { name: "asc" } });
   return pets.map(toPetDto);
 }
 

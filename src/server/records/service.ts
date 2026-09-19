@@ -25,6 +25,8 @@ export function toRecordDto(record: MedicalRecord): RecordDto {
 
 export interface ListRecordsOptions {
   type?: string;
+  /** Case-insensitive match against the title. */
+  query?: string;
 }
 
 /** Newest first. Ownership is enforced by resolving the pet under this owner. */
@@ -37,6 +39,7 @@ export async function listRecords(
 
   const where: Prisma.MedicalRecordWhereInput = { petId };
   if (options.type) where.type = options.type;
+  if (options.query) where.title = { contains: options.query, mode: "insensitive" };
 
   const records = await prisma.medicalRecord.findMany({
     where,

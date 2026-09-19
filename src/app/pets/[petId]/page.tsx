@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RecordTable } from "@/components/records/record-table";
 import { RecordTypeFilter } from "@/components/records/record-type-filter";
+import { SearchForm } from "@/components/search-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatAge, formatDate } from "@/lib/format";
 import { getCurrentUserId } from "@/server/currentUser";
@@ -17,7 +18,8 @@ import { speciesLabels } from "@/shared/schemas/pet";
 
 export default async function PetPage({ params, searchParams }: PageProps<"/pets/[petId]">) {
   const { petId } = await params;
-  const { type } = await searchParams;
+  const { type, q } = await searchParams;
+  const query = typeof q === "string" ? q.trim() : "";
   const ownerId = await getCurrentUserId();
 
   // Only filter by a type the registry knows; anything else shows all.
@@ -27,7 +29,7 @@ export default async function PetPage({ params, searchParams }: PageProps<"/pets
     if (error instanceof NotFoundError) notFound();
     throw error;
   });
-  const records = await listRecords(ownerId, petId, { type: typeFilter });
+  const records = await listRecords(ownerId, petId, { type: typeFilter, query });
 
   const facts: [string, string | null][] = [
     ["Species", speciesLabels[pet.species]],
@@ -91,7 +93,15 @@ export default async function PetPage({ params, searchParams }: PageProps<"/pets
             <PlusIcon /> Add record
           </Button>
         </div>
-        <RecordTypeFilter basePath={`/pets/${pet.id}`} selected={typeFilter} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <RecordTypeFilter basePath={`/pets/${pet.id}`} selected={typeFilter} query={query} />
+          <SearchForm
+            action={`/pets/${pet.id}`}
+            placeholder="Search records"
+            defaultValue={query}
+            hidden={{ type: typeFilter }}
+          />
+        </div>
         <RecordTable petId={pet.id} records={records} />
       </section>
     </div>
