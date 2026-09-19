@@ -4,10 +4,16 @@ import { toPetDto } from "../pets/service";
 import { toRecordDto } from "../records/service";
 
 /**
+ * A read model, not an entity service: nothing is created or updated here.
+ * It assembles the dashboard from pets and records and applies the care
+ * rules in src/shared/care.ts.
+ */
+
+/**
  * Everything with a due date, soonest first. Uses the dueDate index and the
  * value the registry derived on write, so no JSON is unpacked here.
  */
-export async function listCare(ownerId: string, today: string): Promise<CareItem[]> {
+async function listCare(ownerId: string, today: string): Promise<CareItem[]> {
   const records = await prisma.medicalRecord.findMany({
     where: { pet: { ownerId }, dueDate: { not: null } },
     include: { pet: true },

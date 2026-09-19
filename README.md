@@ -38,7 +38,7 @@ src/
   app/            Next.js routes. Pages are Server Components that read via services;
                   app/api/** are thin REST handlers that validate and call services.
   server/         Everything that touches the database: Prisma client, services
-                  (pets, records, care), typed errors, the auth seam (currentUser).
+                  (pets, records) and the dashboard read model, typed errors, the auth seam (currentUser).
   shared/         Code used by both server and client: Zod input schemas and the
                   record-type registry.
   components/     React components (shadcn/ui primitives under components/ui).

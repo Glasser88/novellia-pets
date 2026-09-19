@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { plural, todayIso } from "@/lib/format";
-import { getDashboard } from "@/server/care/service";
+import { getDashboard } from "@/server/dashboard/service";
 import { getCurrentUserId } from "@/server/currentUser";
 import { speciesLabels } from "@/shared/schemas/pet";
 
