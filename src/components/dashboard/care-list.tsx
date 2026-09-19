@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CareStatusBadge } from "@/components/dashboard/care-status-badge";
 import { formatDate } from "@/lib/format";
-import type { CareItem } from "@/server/care/service";
+import type { CareItem } from "@/shared/care";
 import { describeDue } from "@/shared/care";
 import { getRecordType } from "@/shared/recordTypes";
 
