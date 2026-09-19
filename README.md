@@ -13,6 +13,8 @@ make up          # builds the app, starts Postgres, migrates, seeds demo data, s
 make down        # stops everything
 ```
 
+The app uses port 3000 and Postgres uses 5432 on the host; stop anything else on those ports first (a running `next dev`, a local Postgres).
+
 For development (app on the host with hot reload, Postgres in Docker), you also need Node 22:
 
 ```sh
