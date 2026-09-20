@@ -10,6 +10,7 @@ export const GET = withErrorHandling<Ctx>(async (req, { params }) => {
   const { petId } = await params;
   const ownerId = await getCurrentUserId();
   const type = new URL(req.url).searchParams.get("type") ?? undefined;
+
   return NextResponse.json(await listRecords(ownerId, petId, { type }));
 });
 
@@ -18,5 +19,6 @@ export const POST = withErrorHandling<Ctx>(async (req, { params }) => {
   const ownerId = await getCurrentUserId();
   const input = await parseBody(req, recordInputSchema);
   const record = await createRecord(ownerId, petId, input);
+
   return NextResponse.json(record, { status: 201 });
 });

@@ -24,6 +24,7 @@ export const PATCH = withErrorHandling<Ctx>(async (req, { params }) => {
 export const DELETE = withErrorHandling<Ctx>(async (_req, { params }) => {
   const { petId } = await params;
   const ownerId = await getCurrentUserId();
+
   await deletePet(ownerId, petId);
 
   return new NextResponse(null, { status: 204 });

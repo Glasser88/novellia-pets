@@ -1,3 +1,6 @@
+"use client";
+
+import type { FormEvent } from "react";
 import { SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -13,8 +16,19 @@ interface SearchFormProps {
 /**
  * A plain GET form: submitting navigates to `action?q=...`, so search is
  * server-rendered, linkable and works without JavaScript.
+ *
+ * The browser's native clear button on a search input only empties the field;
+ * it does not submit. With JavaScript available we submit when an active
+ * search is cleared, so the results reset too.
  */
 export function SearchForm({ action, placeholder, defaultValue, hidden = {} }: SearchFormProps) {
+  function handleInput(event: FormEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    if (input.value === "" && defaultValue) {
+      input.form?.requestSubmit();
+    }
+  }
+
   return (
     <form action={action} method="get" role="search" className="relative w-full max-w-xs">
       {Object.entries(hidden).map(
@@ -26,6 +40,7 @@ export function SearchForm({ action, placeholder, defaultValue, hidden = {} }: S
         name="q"
         placeholder={placeholder}
         defaultValue={defaultValue}
+        onInput={handleInput}
         aria-label={placeholder}
         className="pl-8"
       />
