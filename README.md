@@ -92,6 +92,12 @@ All routes act as a single demo owner (see "Authentication" in DECISIONS.md).
 
 Validation errors return `400 { error, issues: [{ path, message }] }`; unknown ids return `404`.
 
+## Tools and AI usage
+
+**Stack choices.** Next.js, React and TypeScript are what I know best, so the UI and API layers are on familiar ground. Prisma and Postgres were new to me; I chose them because Postgres is what the team runs in production, and Prisma keeps the learning surface small (one schema file, generated types, a handful of query methods). The ORM was the right trade: the interesting decisions in this project are about the data model and the registry, not about SQL syntax. Tailwind and shadcn/ui are for speed; the components are copied into the repo, not imported from a package, so there is nothing hidden.
+
+**AI.** I built this with Claude as a pair, working in small steps: I set the architecture direction and the constraints (extensible record types, thin API over services, no dependencies without a reason), it drafted code and explained the trade-offs, and I reviewed each change, ran it, and pushed back where the code was cleverer than it needed to be (several commits are readability passes that came out of that). Every decision in DECISIONS.md is one I can defend without the tool. The commit history is the honest record of how the project was built.
+
 ## Tests
 
 `npm test` runs unit tests for the pure logic: the record-type registry and schema derivation, input schemas, and the care-status rules. Manual API checks are in the commit history; there are no database integration tests (see DECISIONS.md).
