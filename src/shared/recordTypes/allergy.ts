@@ -1,4 +1,12 @@
+import { z } from "zod";
+import { optionalText } from "@/shared/schemas/common";
 import { defineRecordType } from "./defineRecordType";
+
+const SEVERITIES = [
+  { value: "mild", label: "Mild" },
+  { value: "moderate", label: "Moderate" },
+  { value: "severe", label: "Severe" },
+];
 
 export const allergy = defineRecordType({
   key: "allergy",
@@ -6,24 +14,24 @@ export const allergy = defineRecordType({
   pluralLabel: "Allergies",
   description:
     "A known allergy or sensitivity. Has no due date; it is a standing fact about the pet.",
-  fields: {
-    allergen: {
-      kind: "text",
+
+  schema: z.strictObject({
+    allergen: z.string().trim().min(1, "Required"),
+    reaction: optionalText(),
+    severity: z.enum(SEVERITIES.map((s) => s.value)),
+  }),
+
+  fields: [
+    {
+      name: "allergen",
       label: "Allergen",
+      kind: "text",
       required: true,
       placeholder: "e.g. Chicken, penicillin",
     },
-    reaction: { kind: "text", label: "Reaction", placeholder: "e.g. Hives, vomiting" },
-    severity: {
-      kind: "select",
-      label: "Severity",
-      required: true,
-      options: [
-        { value: "mild", label: "Mild" },
-        { value: "moderate", label: "Moderate" },
-        { value: "severe", label: "Severe" },
-      ],
-    },
-  },
+    { name: "reaction", label: "Reaction", kind: "text", placeholder: "e.g. Hives, vomiting" },
+    { name: "severity", label: "Severity", kind: "select", required: true, options: SEVERITIES },
+  ],
+
   summary: (data) => `${data.allergen} (${data.severity})`,
 });

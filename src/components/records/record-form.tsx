@@ -10,7 +10,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, ApiError, fieldErrorsFrom } from "@/lib/api";
 import { todayIso } from "@/lib/format";
-import { getRecordType, listRecordTypes, type RecordType } from "@/shared/recordTypes";
+import { getRecordType, listRecordTypes, type AnyRecordType } from "@/shared/recordTypes";
 import { recordInputSchema, type RecordDto } from "@/shared/schemas/record";
 
 interface RecordFormProps {
@@ -23,30 +23,33 @@ const recordTypes = listRecordTypes();
 
 /** Initial `data` inputs for a type: the record's values, or blanks. */
 function initialDataValues(
-  type: RecordType,
+  type: AnyRecordType,
   data?: Record<string, unknown>,
 ): Record<string, FieldValue> {
   const values: Record<string, FieldValue> = {};
-  for (const [name, field] of Object.entries(type.fields)) {
-    const existing = data?.[name];
-    values[name] =
-      field.kind === "boolean" ? Boolean(existing) : existing == null ? "" : String(existing);
+  for (const field of type.fields) {
+    const existing = data?.[field.name];
+    if (field.kind === "boolean") {
+      values[field.name] = Boolean(existing);
+    } else {
+      values[field.name] = existing == null ? "" : String(existing);
+    }
   }
   return values;
 }
 
 /** Turn raw input values into the JSON the API expects for `data`. */
 function dataFromValues(
-  type: RecordType,
+  type: AnyRecordType,
   values: Record<string, FieldValue>,
 ): Record<string, unknown> {
   const data: Record<string, unknown> = {};
-  for (const [name, field] of Object.entries(type.fields)) {
-    const value = values[name];
+  for (const field of type.fields) {
+    const value = values[field.name];
     if (field.kind === "number") {
-      data[name] = value === "" ? undefined : Number(value);
+      data[field.name] = value === "" ? null : Number(value);
     } else {
-      data[name] = value;
+      data[field.name] = value;
     }
   }
   return data;
@@ -162,14 +165,13 @@ export function RecordForm({ petId, record }: RecordFormProps) {
       </FormField>
 
       {/* Type-specific fields, rendered from the registry definition. */}
-      {Object.entries(type.fields).map(([name, field]) => (
+      {type.fields.map((field) => (
         <RecordFieldInput
-          key={`${typeKey}-${name}`}
-          name={name}
+          key={`${typeKey}-${field.name}`}
           field={field}
-          value={dataValues[name] ?? ""}
-          error={errors[name]}
-          onChange={(value) => setDataValue(name, value)}
+          value={dataValues[field.name] ?? ""}
+          error={errors[field.name]}
+          onChange={(value) => setDataValue(field.name, value)}
         />
       ))}
 

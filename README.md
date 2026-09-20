@@ -50,7 +50,7 @@ The dependency direction is `app → server → shared`, and `components → sha
 
 ### The record-type registry
 
-`src/shared/recordTypes/` is the single source of truth for what a record type is. Each type is one file that declares its fields:
+`src/shared/recordTypes/` is the single source of truth for what a record type is. Each type is one file with two things: a Zod schema that validates the record's `data`, and a list of form fields that says how to render it.
 
 ```ts
 export const vaccination = defineRecordType({
@@ -58,18 +58,25 @@ export const vaccination = defineRecordType({
   label: "Vaccination",
   pluralLabel: "Vaccinations",
   description: "A vaccine dose administered, with when the next one is due.",
-  fields: {
-    vaccine: { kind: "text", label: "Vaccine", required: true },
-    nextDueDate: { kind: "date", label: "Next dose due" },
-  },
+
+  schema: z.strictObject({
+    vaccine: z.string().trim().min(1, "Required"),
+    nextDueDate: optionalIsoDate,
+  }),
+
+  fields: [
+    { name: "vaccine", label: "Vaccine", kind: "text", required: true },
+    { name: "nextDueDate", label: "Next dose due", kind: "date" },
+  ],
+
   dueDate: (data) => data.nextDueDate ?? null,
   summary: (data) => data.vaccine,
 });
 ```
 
-`defineRecordType` derives a strict Zod schema from `fields`. The API validates incoming `data` against it, the form renders inputs from it, the table shows `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type.
+The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the table shows `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
 
-**To add a record type:** create `src/shared/recordTypes/<type>.ts` and add it to the list in `index.ts`. No migration, route or component changes.
+**To add a record type:** copy the closest file in `src/shared/recordTypes/`, edit it, and add it to the list in `index.ts`. No migration, route or component changes.
 
 ### Data model
 

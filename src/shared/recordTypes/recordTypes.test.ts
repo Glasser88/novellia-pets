@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   defineRecordType,
   getRecordType,
@@ -28,42 +29,50 @@ describe("registry", () => {
     expect(() => getRecordType("bloodwork")).toThrow(UnknownRecordTypeError);
   });
 
-  it("every type has a label, description and at least one field", () => {
+  it("every type's form fields match its schema keys exactly", () => {
     for (const type of listRecordTypes()) {
-      expect(type.label).toBeTruthy();
-      expect(type.description).toBeTruthy();
-      expect(Object.keys(type.fields).length).toBeGreaterThan(0);
+      const schemaKeys = Object.keys(type.schema.shape).sort();
+      const fieldNames = type.fields.map((field) => field.name).sort();
+      expect(fieldNames, type.key).toEqual(schemaKeys);
+    }
+  });
+
+  it("select fields declare their options", () => {
+    for (const type of listRecordTypes()) {
+      for (const field of type.fields) {
+        if (field.kind === "select")
+          expect(field.options?.length, `${type.key}.${field.name}`).toBeGreaterThan(0);
+      }
     }
   });
 });
 
-describe("derived schemas", () => {
-  it("accepts valid data and strips nothing", () => {
-    const result = vaccination.schema.safeParse({ vaccine: "Rabies", nextDueDate: "2027-03-01" });
-    expect(result.success).toBe(true);
+describe("schemas", () => {
+  it("accept valid data", () => {
+    expect(
+      vaccination.schema.safeParse({ vaccine: "Rabies", nextDueDate: "2027-03-01" }).success,
+    ).toBe(true);
   });
 
-  it("requires required fields", () => {
-    const result = vaccination.schema.safeParse({ nextDueDate: "2027-03-01" });
-    expect(result.success).toBe(false);
+  it("require required fields", () => {
+    expect(vaccination.schema.safeParse({ nextDueDate: "2027-03-01" }).success).toBe(false);
   });
 
-  it("treats empty strings from forms as absent for optional fields", () => {
-    const result = vaccination.schema.safeParse({
+  it("store blank inputs as null", () => {
+    const parsed = vaccination.schema.parse({
       vaccine: "Rabies",
       manufacturer: "",
       nextDueDate: "",
     });
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data.nextDueDate).toBeUndefined();
+    expect(parsed.manufacturer).toBeNull();
+    expect(parsed.nextDueDate).toBeNull();
   });
 
-  it("rejects unknown keys so typos do not silently persist", () => {
-    const result = vaccination.schema.safeParse({ vaccine: "Rabies", vacine: "typo" });
-    expect(result.success).toBe(false);
+  it("reject unknown keys so typos do not silently persist", () => {
+    expect(vaccination.schema.safeParse({ vaccine: "Rabies", vacine: "typo" }).success).toBe(false);
   });
 
-  it("validates date format and select options", () => {
+  it("validate date format and select options", () => {
     expect(
       vaccination.schema.safeParse({ vaccine: "Rabies", nextDueDate: "03/01/2027" }).success,
     ).toBe(false);
@@ -72,7 +81,7 @@ describe("derived schemas", () => {
     );
   });
 
-  it("runs cross-field refinements", () => {
+  it("run cross-field rules", () => {
     const result = medication.schema.safeParse({
       name: "Apoquel",
       frequency: "daily",
@@ -83,36 +92,6 @@ describe("derived schemas", () => {
   });
 });
 
-describe("dueDate", () => {
-  it("is derived from the type's own rule", () => {
-    expect(
-      vaccination.dueDate?.({ vaccine: "Rabies", nextDueDate: "2027-03-01" }, "2026-03-01"),
-    ).toBe("2027-03-01");
-    expect(vaccination.dueDate?.({ vaccine: "Rabies" }, "2026-03-01")).toBeNull();
-  });
-
-  it("is absent for types with no follow-up", () => {
-    expect(getRecordType("allergy").dueDate).toBeUndefined();
-  });
-});
-
-describe("defineRecordType", () => {
-  it("lets a new type be declared with only field definitions", () => {
-    const bloodwork = defineRecordType({
-      key: "bloodwork",
-      label: "Bloodwork",
-      pluralLabel: "Bloodwork",
-      description: "Lab panel results",
-      fields: {
-        panel: { kind: "text", label: "Panel", required: true },
-        abnormal: { kind: "boolean", label: "Abnormal results" },
-      },
-    });
-    const parsed = bloodwork.schema.parse({ panel: "CBC" });
-    expect(parsed).toEqual({ panel: "CBC", abnormal: false });
-  });
-});
-
 describe("parseRecordData", () => {
   it("validates against the type and derives dueDate", () => {
     const r = parseRecordData(
@@ -120,15 +99,15 @@ describe("parseRecordData", () => {
       { vaccine: "Rabies", nextDueDate: "2027-03-01" },
       "2026-03-01",
     );
-    expect(r).toEqual({
-      data: { vaccine: "Rabies", nextDueDate: "2027-03-01" },
-      dueDate: "2027-03-01",
-    });
+    expect(r.data).toEqual({ vaccine: "Rabies", nextDueDate: "2027-03-01" });
+    expect(r.dueDate).toBe("2027-03-01");
   });
 
-  it("returns null dueDate for types without a rule", () => {
-    const r = parseRecordData("allergy", { allergen: "Chicken", severity: "mild" }, "2026-03-01");
-    expect(r.dueDate).toBeNull();
+  it("returns null dueDate when the rule has nothing or the type has no rule", () => {
+    expect(parseRecordData("vaccination", { vaccine: "Rabies" }, "2026-03-01").dueDate).toBeNull();
+    expect(
+      parseRecordData("allergy", { allergen: "Chicken", severity: "mild" }, "2026-03-01").dueDate,
+    ).toBeNull();
   });
 
   it("throws for unknown types and invalid data", () => {
@@ -142,5 +121,24 @@ describe("summarizeRecordData", () => {
     expect(summarizeRecordData("allergy", { allergen: "Chicken", severity: "mild" })).toBe(
       "Chicken (mild)",
     );
+  });
+});
+
+describe("defineRecordType", () => {
+  it("is just a schema plus form fields", () => {
+    const bloodwork = defineRecordType({
+      key: "bloodwork",
+      label: "Bloodwork",
+      pluralLabel: "Bloodwork",
+      description: "Lab panel results",
+      schema: z.strictObject({ panel: z.string().min(1), abnormal: z.boolean().default(false) }),
+      fields: [
+        { name: "panel", label: "Panel", kind: "text", required: true },
+        { name: "abnormal", label: "Abnormal results", kind: "boolean" },
+      ],
+      summary: (data) => data.panel,
+    });
+    expect(bloodwork.schema.parse({ panel: "CBC" })).toEqual({ panel: "CBC", abnormal: false });
+    expect(bloodwork.summary?.({ panel: "CBC", abnormal: false })).toBe("CBC");
   });
 });

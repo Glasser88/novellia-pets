@@ -16,7 +16,7 @@ The brief left a lot open on purpose. This is what I decided, why, and what I wo
 
 **Postgres via Docker Compose, Prisma as the ORM.** Postgres matches production and gives `jsonb` for the record data. Prisma keeps the schema readable in one file, generates migrations, and produces types the rest of the code uses. The trade: Prisma types JSON columns loosely (`Json`), which is exactly why the registry exists to give `data` real types at the application boundary.
 
-**Zod at every boundary.** Input schemas live in `src/shared` and run on both the client (instant field errors) and the server (the source of truth). The registry derives its schemas from field definitions rather than hand-written Zod so validation and form rendering cannot drift.
+**Zod at every boundary.** Input schemas live in `src/shared` and run on both the client (instant field errors) and the server (the source of truth). Record types write their schema in plain Zod; a test keeps the schema and the form field list in sync.
 
 **No form, data-fetching or date library.** Pages are Server Components that read straight from the service layer, so there is no client cache to manage (TanStack Query solves a problem this app does not have). Forms are `useState` plus the shared Zod schema. Dates are strings outside the database and formatted with `Intl`. Each of these is a dependency I would add the first time a screen needs it: type-ahead search or polling for TanStack Query, a large multi-step form for a form library, calendar arithmetic (recurring schedules) for date-fns.
 
@@ -37,7 +37,9 @@ The middle path keeps the queryable fields as columns and validates `data` throu
 
 ## The record-type registry
 
-Each type is one file calling `defineRecordType` with a declarative field list. From that list the registry builds a strict Zod schema (unknown keys rejected), the form renders inputs by field kind, the table shows a summary, and the dashboard reads a due-date rule. A type can add a `refine` for cross-field rules the field list cannot express.
+Each type is one file: a plain Zod schema for its `data` plus a list of form fields. The API validates with the schema, the form renders from the field list (one component switches on field kind), the table shows `summary`, and the dashboard reads the `dueDate` rule. A test asserts the schema keys and field names match.
+
+I first built this with the schema _derived_ from the field list, so a type was declared once. It worked, but it needed a handful of mapped and conditional TypeScript types to give `data` a real type, and that machinery was the hardest thing in the codebase to explain. Writing the schema by hand costs a few duplicated lines per type and removes all of it; the sync test catches the drift the derivation was preventing. Plain code that a test guards beat clever code that guards itself.
 
 Adding a type is a new file plus one line in the index. Removing or renaming a `key` is a data migration and is documented as such.
 
@@ -49,7 +51,7 @@ Adding a type is a new file plus one line in the index. Removing or renaming a `
 
 - `type` is immutable after creation. Changing it would orphan `data`; that operation is a delete and a create.
 - `data` is replaced whole on update, never merged, so it is always validated as a complete object.
-- `PATCH` with partial bodies rather than `PUT`, because the UI edits fields, not documents. Blank inputs on nullable columns send `null` ("clear this"); missing keys mean "leave it alone".
+- `PATCH` with partial bodies rather than `PUT`, because the UI edits fields, not documents. One rule for blank inputs everywhere: blank means `null` ("no value"); a key that is not sent means "leave it alone".
 
 ## What I am not satisfied with
 
