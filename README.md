@@ -60,6 +60,15 @@ prisma/           Schema, migrations, seed.
 
 The dependency direction is `app → server → shared`, and `components → shared`. Nothing in `shared` imports from `server` or `app`.
 
+Reads and writes take different paths to the same service layer. A page is a Server Component, so it calls the service directly; a form runs in the browser, so it goes through the REST API, which validates and then calls the same service. The service is the one place that knows about the database and about ownership.
+
+```mermaid
+flowchart LR
+  page["Page (Server Component)"] --> svc
+  form["Form (Client Component)"] -->|fetch| api["/api route<br/>withErrorHandling + Zod"] --> svc["Service<br/>src/server/*/service.ts"]
+  svc --> db[("Postgres via Prisma")]
+```
+
 A few conventions, so the code reads the same everywhere: functions are `const name = () => {}`; `Pet` and `MedicalRecord` are the app's shapes (dates as `YYYY-MM-DD` strings) and Prisma's row types only appear inside `src/server/*/service.ts` as `PetRow` / `MedicalRecordRow`; lookups are plain objects typed `Partial<Record<string, T>>` rather than `Map`; list pages are for finding and opening things and only detail pages have Edit and Delete; and every filter lives in the URL, so results are linkable and server-rendered.
 
 ### The record-type registry
@@ -90,6 +99,16 @@ export const vaccination = defineRecordType({
 ```
 
 The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the record's detail page lists every field with its label, the tables show `summary` and `icon`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
+
+```mermaid
+flowchart LR
+  def["vaccination.ts<br/>defineRecordType(...)"]
+  def -->|schema| api["API: validate data on create/update"]
+  def -->|fields| form["Form: render inputs"]
+  def -->|fields| detail["Record page: list every field"]
+  def -->|summary, icon| tables["Tables and lists"]
+  def -->|dueDate| dash["Dashboard: overdue / due soon / upcoming"]
+```
 
 **To add a record type:** copy the closest file in `src/shared/recordTypes/`, edit it, and add it to the list in `index.ts`. No migration, route or component changes.
 
