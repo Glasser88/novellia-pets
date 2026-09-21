@@ -60,7 +60,9 @@ const RecordPage = async ({ params }: PageProps<"/pets/[petId]/records/[recordId
             <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold">
               {record.title}
               <Badge variant="outline">{type.label}</Badge>
-              {record.dueDate && <CareStatusBadge status={careStatus(record.dueDate, today)} />}
+              <CareStatusBadge
+                status={record.dueDate ? careStatus(record.dueDate, today) : "none"}
+              />
             </h1>
           </div>
         </div>

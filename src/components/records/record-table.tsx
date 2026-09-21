@@ -72,11 +72,9 @@ export const RecordTable = ({ rows, today, showPet = false }: RecordTableProps) 
               {record.dueDate ? formatDate(record.dueDate) : "—"}
             </TableCell>
             <TableCell>
-              {record.dueDate ? (
-                <CareStatusBadge status={careStatus(record.dueDate, today)} />
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
+              <CareStatusBadge
+                status={record.dueDate ? careStatus(record.dueDate, today) : "none"}
+              />
             </TableCell>
           </LinkTableRow>
         );
