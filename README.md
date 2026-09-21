@@ -1,5 +1,7 @@
 # Novellia Pets
 
+**Walkthrough (under 10 minutes):** https://www.loom.com/share/1cd1e9c50b444faca83a3d81e365e145
+
 An MVP for pet owners to track their pets and their pets' medical records. Records that imply future care (a next vaccine dose, a medication refill) carry a due date, and the app turns those into a dashboard of what is overdue, what is due soon, and what is coming up.
 
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 + shadcn/ui · Prisma 7 · PostgreSQL 16 · Zod · Vitest
