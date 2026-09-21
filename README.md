@@ -4,6 +4,11 @@ An MVP for pet owners to track their pets and their pets' medical records. Recor
 
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 + shadcn/ui · Prisma 7 · PostgreSQL 16 · Zod · Vitest
 
+<p align="center">
+  <img src="docs/dashboard-light.png" alt="The dashboard in light mode" width="49%" />
+  <img src="docs/dashboard-dark.png" alt="The dashboard in dark mode" width="49%" />
+</p>
+
 ## Run it
 
 The only requirement is Docker.
@@ -23,6 +28,12 @@ make seed        # (re)loads the demo data
 make check       # lint + typecheck + format check + tests
 make help        # everything else
 ```
+
+## A two-minute tour
+
+The demo data has three pets in three states. On the dashboard, the greeting says what needs doing; Milo has an overdue rabies vaccine, Luna has a refill due soon, and Pip is all good. Click the **Overdue** card: that is the Records page filtered to what the card counts, and the filters above the table are just URL parameters. Open **Milo**, then his overdue **Rabies** record: every field on that page comes from the vaccination type's definition, not from a hand-written screen.
+
+Now add a record for Milo: pick **Vaccination**, give it a title and a **next dose due** date a week from now, and save. Back on the dashboard it appears under Needs attention with a "Due soon" badge, and Milo's status changes with it. That derived due date is the feature: records are history, and the app turns them into what to do next.
 
 ## What it does
 
@@ -132,6 +143,21 @@ All routes act as a single demo owner (see "Authentication" in DECISIONS.md).
 | GET, PATCH, DELETE | `/api/pets/:petId/records/:recordId` | read / partial update / delete  |
 
 Validation errors return `400 { error, issues: [{ path, message }] }`; unknown ids return `404`.
+
+For example, with the app running (`PET_ID` from any pet's URL):
+
+```sh
+# Create a vaccination with a next-due date; the response includes the derived dueDate.
+curl -s -X POST localhost:3000/api/pets/$PET_ID/records \
+  -H 'content-type: application/json' \
+  -d '{"type":"vaccination","title":"Rabies","date":"2026-09-21","data":{"vaccine":"Rabies","nextDueDate":"2027-09-21"}}'
+
+# Send an invalid date and get the field-level error the form shows.
+curl -s -X PATCH localhost:3000/api/pets/$PET_ID/records/$RECORD_ID \
+  -H 'content-type: application/json' \
+  -d '{"date":"tomorrow"}'
+# → 400 {"error":"Validation failed","issues":[{"path":["date"],"message":"Expected YYYY-MM-DD"}]}
+```
 
 ## Tools and AI usage
 
