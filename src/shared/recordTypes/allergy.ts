@@ -18,7 +18,7 @@ export const allergy = defineRecordType({
   schema: z.strictObject({
     allergen: z.string().trim().min(1, "Required"),
     reaction: optionalText(),
-    severity: z.enum(SEVERITIES.map((s) => s.value)),
+    severity: z.enum(SEVERITIES.map((severity) => severity.value)),
   }),
 
   fields: [

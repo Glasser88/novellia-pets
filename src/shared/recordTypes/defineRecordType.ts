@@ -40,8 +40,6 @@ export interface RecordType<Schema extends z.ZodObject = z.ZodObject> {
  * Identity function: it only exists so TypeScript infers the schema type and
  * gives `dueDate` and `summary` a typed `data` argument.
  */
-export function defineRecordType<Schema extends z.ZodObject>(
+export const defineRecordType = <Schema extends z.ZodObject>(
   type: RecordType<Schema>,
-): RecordType<Schema> {
-  return type;
-}
+): RecordType<Schema> => type;

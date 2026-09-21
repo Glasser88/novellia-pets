@@ -25,19 +25,19 @@ interface ConfirmDeleteButtonProps {
 }
 
 /** A delete button that asks for confirmation, then calls the API. */
-export function ConfirmDeleteButton({
+export const ConfirmDeleteButton = ({
   apiPath,
   redirectTo,
   title,
   description,
   size = "default",
-}: ConfirmDeleteButtonProps) {
+}: ConfirmDeleteButtonProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleDelete() {
+  const handleDelete = async () => {
     setDeleting(true);
     setError(null);
     try {
@@ -50,7 +50,7 @@ export function ConfirmDeleteButton({
     } finally {
       setDeleting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -72,4 +72,4 @@ export function ConfirmDeleteButton({
       </DialogContent>
     </Dialog>
   );
-}
+};

@@ -10,14 +10,14 @@ export interface ApiIssue {
 }
 
 /** Validation issues keyed by top-level field name, for showing under inputs. */
-export function fieldErrorsFrom(issues: ApiIssue[]): Record<string, string> {
+export const fieldErrorsFrom = (issues: ApiIssue[]): Record<string, string> => {
   const errors: Record<string, string> = {};
   for (const issue of issues) {
     const field = String(issue.path[0] ?? "");
     if (!errors[field]) errors[field] = issue.message;
   }
   return errors;
-}
+};
 
 export class ApiError extends Error {
   constructor(
@@ -34,16 +34,17 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(
+export const api = async <T>(
   path: string,
   options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown } = {},
-): Promise<T> {
+): Promise<T> => {
   const response = await fetch(path, {
     method: options.method ?? "GET",
     headers: options.body !== undefined ? { "content-type": "application/json" } : undefined,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
 
+  // 204 has no body; callers of DELETE use api<void>, so undefined is the right value.
   if (response.status === 204) return undefined as T;
 
   const json = await response.json().catch(() => null);
@@ -51,4 +52,4 @@ export async function api<T>(
     throw new ApiError(json?.error ?? response.statusText, response.status, json?.issues ?? []);
   }
   return json as T;
-}
+};

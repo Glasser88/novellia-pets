@@ -10,41 +10,42 @@ type Handler<Ctx> = (req: Request, ctx: Ctx) => Promise<Response>;
  * responses with the right status. Anything unexpected is logged and hidden
  * behind a 500.
  */
-export function withErrorHandling<Ctx>(handler: Handler<Ctx>): Handler<Ctx> {
-  return async (req, ctx) => {
+export const withErrorHandling = <Ctx>(handler: Handler<Ctx>): Handler<Ctx> => {
+  const handleWithErrors: Handler<Ctx> = async (req, ctx) => {
     try {
       return await handler(req, ctx);
-    } catch (err) {
-      return errorResponse(err);
+    } catch (error) {
+      return errorResponse(error);
     }
   };
-}
+  return handleWithErrors;
+};
 
-export function errorResponse(err: unknown): NextResponse {
-  if (err instanceof ZodError) {
+export const errorResponse = (error: unknown): NextResponse => {
+  if (error instanceof ZodError) {
     return NextResponse.json(
       {
         error: "Validation failed",
-        issues: err.issues.map((i) => ({ path: i.path, message: i.message })),
+        issues: error.issues.map((issue) => ({ path: issue.path, message: issue.message })),
       },
       { status: 400 },
     );
   }
 
-  if (err instanceof UnknownRecordTypeError) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+  if (error instanceof UnknownRecordTypeError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  if (err instanceof NotFoundError || err instanceof BadRequestError) {
-    return NextResponse.json({ error: err.message }, { status: err.status });
+  if (error instanceof NotFoundError || error instanceof BadRequestError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
   }
 
-  console.error(err);
+  console.error(error);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+};
 
 /** Parse and validate a JSON body. Malformed JSON is a 400, not a 500. */
-export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<T> {
+export const parseBody = async <T>(req: Request, schema: ZodType<T>): Promise<T> => {
   let json: unknown;
 
   try {
@@ -54,4 +55,4 @@ export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<T>
   }
 
   return schema.parse(json);
-}
+};

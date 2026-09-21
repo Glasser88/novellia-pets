@@ -21,7 +21,7 @@ export const medication = defineRecordType({
     .strictObject({
       name: z.string().trim().min(1, "Required"),
       dosage: optionalText(),
-      frequency: z.enum(FREQUENCIES.map((f) => f.value)),
+      frequency: z.enum(FREQUENCIES.map((frequency) => frequency.value)),
       endDate: optionalIsoDate,
       refillDueDate: optionalIsoDate,
     })

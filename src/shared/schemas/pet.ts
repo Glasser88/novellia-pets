@@ -27,12 +27,12 @@ export type PetInput = z.infer<typeof petInputSchema>;
 /** Partial update: any subset of fields, but at least one. */
 export const petUpdateSchema = petInputSchema
   .partial()
-  .refine((v) => Object.keys(v).length > 0, "No fields to update");
+  .refine((fields) => Object.keys(fields).length > 0, "No fields to update");
 
 export type PetUpdate = z.infer<typeof petUpdateSchema>;
 
 /** What the API returns. Dates are ISO strings so the shape is JSON-safe. */
-export interface PetDto {
+export interface Pet {
   id: string;
   name: string;
   species: Species;

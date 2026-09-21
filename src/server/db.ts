@@ -6,11 +6,11 @@ import { PrismaClient } from "@/generated/prisma/client";
 // Postgres connection pool.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-function createClient() {
+const createClient = () => {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
   return new PrismaClient({ adapter });
-}
+};
 
 export const prisma = globalForPrisma.prisma ?? createClient();
 

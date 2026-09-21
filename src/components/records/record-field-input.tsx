@@ -20,7 +20,7 @@ interface RecordFieldInputProps {
  * Renders one registry field by its `kind`. This is the only place the UI
  * knows about field kinds, so a new record type needs no new components.
  */
-export function RecordFieldInput({ field, value, error, onChange }: RecordFieldInputProps) {
+export const RecordFieldInput = ({ field, value, error, onChange }: RecordFieldInputProps) => {
   const id = `data-${field.name}`;
   const invalid = Boolean(error);
 
@@ -32,7 +32,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
           type="checkbox"
           className="size-4"
           checked={Boolean(value)}
-          onChange={(e) => onChange(e.target.checked)}
+          onChange={(event) => onChange(event.target.checked)}
         />
         {field.label}
       </label>
@@ -51,7 +51,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
           rows={3}
           value={text}
           placeholder={field.placeholder}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={invalid}
         />
       );
@@ -61,7 +61,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
         <NativeSelect
           id={id}
           value={text}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={invalid}
         >
           <option value="">Select…</option>
@@ -80,7 +80,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
           type="number"
           step="any"
           value={text}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={invalid}
         />
       );
@@ -91,7 +91,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
           id={id}
           type="date"
           value={text}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={invalid}
         />
       );
@@ -102,7 +102,7 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
           id={id}
           value={text}
           placeholder={field.placeholder}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={invalid}
         />
       );
@@ -113,4 +113,4 @@ export function RecordFieldInput({ field, value, error, onChange }: RecordFieldI
       {control}
     </FormField>
   );
-}
+};

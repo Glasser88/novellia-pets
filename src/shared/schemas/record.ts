@@ -24,11 +24,11 @@ export type RecordInput = z.infer<typeof recordInputSchema>;
 export const recordUpdateSchema = recordInputSchema
   .omit({ type: true })
   .partial()
-  .refine((v) => Object.keys(v).length > 0, "No fields to update");
+  .refine((fields) => Object.keys(fields).length > 0, "No fields to update");
 
 export type RecordUpdate = z.infer<typeof recordUpdateSchema>;
 
-export interface RecordDto {
+export interface MedicalRecord {
   id: string;
   petId: string;
   type: string;

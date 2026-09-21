@@ -7,18 +7,12 @@
  * database layer, and these helpers do the conversion at that boundary.
  */
 
-export function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+export const toIsoDate = (date: Date): string => date.toISOString().slice(0, 10);
 
-export function toIsoDateOrNull(date: Date | null): string | null {
-  return date ? toIsoDate(date) : null;
-}
+export const toIsoDateOrNull = (date: Date | null): string | null =>
+  date ? toIsoDate(date) : null;
 
-export function fromIsoDate(isoDate: string): Date {
-  return new Date(`${isoDate}T00:00:00.000Z`);
-}
+export const fromIsoDate = (isoDate: string): Date => new Date(`${isoDate}T00:00:00.000Z`);
 
-export function fromIsoDateOrNull(isoDate: string | null | undefined): Date | null {
-  return isoDate ? fromIsoDate(isoDate) : null;
-}
+export const fromIsoDateOrNull = (isoDate: string | null | undefined): Date | null =>
+  isoDate ? fromIsoDate(isoDate) : null;

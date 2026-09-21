@@ -21,13 +21,13 @@ interface SearchFormProps {
  * it does not submit. With JavaScript available we submit when an active
  * search is cleared, so the results reset too.
  */
-export function SearchForm({ action, placeholder, defaultValue, hidden = {} }: SearchFormProps) {
-  function handleInput(event: FormEvent<HTMLInputElement>) {
+export const SearchForm = ({ action, placeholder, defaultValue, hidden = {} }: SearchFormProps) => {
+  const handleInput = (event: FormEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     if (input.value === "" && defaultValue) {
       input.form?.requestSubmit();
     }
-  }
+  };
 
   return (
     <form action={action} method="get" role="search" className="relative w-full max-w-xs">
@@ -46,4 +46,4 @@ export function SearchForm({ action, placeholder, defaultValue, hidden = {} }: S
       />
     </form>
   );
-}
+};
