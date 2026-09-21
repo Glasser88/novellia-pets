@@ -28,8 +28,8 @@ interface SectionCardProps {
 
 /**
  * The shared frame for every block of content in the app: one card, one
- * title style, and optional description, header action and empty state.
- * The content is whatever the section needs.
+ * title style, and an optional hint, count, description, header action and
+ * empty state. The content is whatever the section needs.
  */
 export const SectionCard = ({
   title,

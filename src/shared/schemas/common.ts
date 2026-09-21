@@ -15,12 +15,10 @@ export const optionalText = (maxLength = 500) =>
 
 export const optionalIsoDate = z.preprocess(emptyToNull, isoDate.nullable().optional());
 
+/** For a record type's "number" field: the form sends null when it is left blank. */
 export const optionalNumber = (min?: number, max?: number) => {
   let number = z.number();
   if (min !== undefined) number = number.min(min);
   if (max !== undefined) number = number.max(max);
   return z.preprocess(emptyToNull, number.nullable().optional());
 };
-
-export const optionalSelect = (values: readonly [string, ...string[]]) =>
-  z.preprocess(emptyToNull, z.enum(values).nullable().optional());

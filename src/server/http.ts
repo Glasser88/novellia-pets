@@ -21,7 +21,7 @@ export const withErrorHandling = <Ctx>(handler: Handler<Ctx>): Handler<Ctx> => {
   return handleWithErrors;
 };
 
-export const errorResponse = (error: unknown): NextResponse => {
+const errorResponse = (error: unknown): NextResponse => {
   if (error instanceof ZodError) {
     return NextResponse.json(
       {
