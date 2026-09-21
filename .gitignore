@@ -41,10 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# AI-assistant instruction files that `next dev` auto-generates; not part of the project
-AGENTS.md
-CLAUDE.md
-
 # Prisma client is generated on install (postinstall) and on schema change
 /src/generated/
 

@@ -11,7 +11,7 @@ interface PaginationProps {
   hrefFor: (page: number) => string;
 }
 
-/** "Showing 26–50 of 132" with Previous and Next. Hidden when everything fits on one page. */
+/** "Showing 26 to 50 of 132" with Previous and Next. Hidden when everything fits on one page. */
 export const Pagination = ({ page, pageCount, pageSize, total, hrefFor }: PaginationProps) => {
   if (pageCount <= 1) return null;
 
@@ -21,7 +21,7 @@ export const Pagination = ({ page, pageCount, pageSize, total, hrefFor }: Pagina
   return (
     <div className="flex items-center justify-between gap-4 pt-3">
       <p className="text-muted-foreground text-sm">
-        Showing {first}–{last} of {total}
+        Showing {first} to {last} of {total}
       </p>
       <div className="flex gap-2">
         <Button
