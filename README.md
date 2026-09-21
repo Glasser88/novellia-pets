@@ -1,6 +1,6 @@
 # Novellia Pets
 
-An MVP for pet owners to track their pets and their pets' medical records, with a dashboard that surfaces upcoming and overdue care.
+An MVP for pet owners to track their pets and their pets' medical records. Records that imply future care (a next vaccine dose, a medication refill) carry a due date, and the app turns those into a dashboard of what is overdue, what is due soon, and what is coming up.
 
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 + shadcn/ui · Prisma 7 · PostgreSQL 16 · Zod · Vitest
 
@@ -26,10 +26,20 @@ make help        # everything else
 
 ## What it does
 
-- Add, view, edit and delete pets.
-- Add, view, edit and delete medical records for a pet. Five record types ship: vaccination, medication, vet visit, allergy, weight check.
-- Dashboard showing every pet's status, plus what is overdue and what is due in the next 30 days.
-- Search pets by name or breed; search and filter a pet's records by title and type.
+- Add, view, edit and delete pets, each with a detail page listing their records.
+- Add, view, edit and delete medical records. Four record types ship: vaccination, medication, vet visit, allergy. Each record has a detail page that renders every field its type defines.
+- A dashboard with a one-line summary of the state of things, counts of overdue and due-soon care, the records that need attention, what is coming up, and every pet with its most urgent status.
+- A records page across all pets, filterable by how soon a record is due (needs attention, overdue, due soon, upcoming), by type, and by title. The dashboard's lists link into it pre-filtered.
+- Search pets by name or breed; search and filter a pet's own records by title and type.
+- Light and dark themes, following the system by default with a toggle in the header.
+
+### The feature: care tracking
+
+The brief asked for one feature that would make the app genuinely useful, and for the reasoning behind it. Mine is that **records know when they are due**, and the app is organised around that.
+
+A medical record on its own is history. What a pet owner actually needs to know is what to do next: the booster that is due in three weeks, the refill that ran out last Tuesday. So each record type can declare a rule for when it implies future care (`dueDate` in the registry, e.g. a vaccination's `nextDueDate`), the server stores the result as a real indexed column on the record, and everything visible is built on it: the dashboard's counts and lists, the status badge on every pet and record, the greeting sentence, and the "needs attention" filter on the records page. Adding a new record type with a due-date rule plugs into all of that with no extra work.
+
+I chose it over alternatives like reminders or sharing with a vet because it is the smallest thing that changes the app from a filing cabinet into something you would open on purpose, and because it is a data-model decision (a derived, promoted column) rather than a feature bolted on top, which is the kind of decision this project is meant to show.
 
 ## How it is put together
 
@@ -38,15 +48,19 @@ src/
   app/            Next.js routes. Pages are Server Components that read via services;
                   app/api/** are thin REST handlers that validate and call services.
   server/         Everything that touches the database: Prisma client, services
-                  (pets, records) and the dashboard read model, typed errors, the auth seam (currentUser).
-  shared/         Code used by both server and client: Zod input schemas and the
-                  record-type registry.
-  components/     React components (shadcn/ui primitives under components/ui).
-  lib/            Small client-side helpers (API fetch wrapper, date formatting).
+                  (pets, records) and the dashboard read model, the due-date windows,
+                  typed errors, the auth seam (currentUser), the theme cookie.
+  shared/         Code used by both server and client: Zod input schemas, the
+                  record-type registry, and the care rules (what "overdue" means).
+  components/     React components. section-card.tsx is the frame every block of
+                  content uses; shadcn/ui primitives live under components/ui.
+  lib/            Small helpers used anywhere (API fetch wrapper, date formatting).
 prisma/           Schema, migrations, seed.
 ```
 
 The dependency direction is `app → server → shared`, and `components → shared`. Nothing in `shared` imports from `server` or `app`.
+
+A few conventions, so the code reads the same everywhere: functions are `const name = () => {}`; `Pet` and `MedicalRecord` are the app's shapes (dates as `YYYY-MM-DD` strings) and Prisma's row types only appear inside `src/server/*/service.ts` as `PetRow` / `MedicalRecordRow`; lookups are plain objects typed `Partial<Record<string, T>>` rather than `Map`; list pages are for finding and opening things and only detail pages have Edit and Delete; and every filter lives in the URL, so results are linkable and server-rendered.
 
 ### The record-type registry
 
@@ -74,7 +88,7 @@ export const vaccination = defineRecordType({
 });
 ```
 
-The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the table shows `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
+The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the record's detail page lists every field with its label, the tables show `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
 
 **To add a record type:** copy the closest file in `src/shared/recordTypes/`, edit it, and add it to the list in `index.ts`. No migration, route or component changes.
 
@@ -107,4 +121,4 @@ Validation errors return `400 { error, issues: [{ path, message }] }`; unknown i
 
 ## Tests
 
-`npm test` runs unit tests for the pure logic: the record-type registry and schema derivation, input schemas, and the care-status rules. Manual API checks are in the commit history; there are no database integration tests (see DECISIONS.md).
+`npm test` (or `make check` for the whole gate) runs unit tests for the pure logic: the record-type registry and schema derivation, input schemas, and the care-status rules. Manual API checks are in the commit history; there are no database integration tests (see DECISIONS.md).

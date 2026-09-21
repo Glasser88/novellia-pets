@@ -47,3 +47,6 @@ CLAUDE.md
 
 # Prisma client is generated on install (postinstall) and on schema change
 /src/generated/
+
+# Local notes for the author, not part of the project
+Claude outputs/
