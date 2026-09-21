@@ -1,3 +1,4 @@
+import { PillIcon } from "lucide-react";
 import { z } from "zod";
 import { optionalIsoDate, optionalText } from "@/shared/schemas/common";
 import { defineRecordType } from "./defineRecordType";
@@ -16,6 +17,7 @@ export const medication = defineRecordType({
   label: "Medication",
   pluralLabel: "Medications",
   description: "An ongoing or completed course of medication.",
+  icon: PillIcon,
 
   schema: z
     .strictObject({

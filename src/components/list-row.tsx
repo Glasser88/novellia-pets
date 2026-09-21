@@ -26,11 +26,12 @@ export const ListRow = ({ href, title, detail, aside, leading }: ListRowProps) =
       className="hover:bg-muted/60 -mx-(--card-spacing) flex items-center gap-4 px-(--card-spacing) py-3 transition-colors"
     >
       {leading}
+      {/* min-w-0 lets this column shrink so long text truncates instead of pushing the badge out. */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 font-medium">{title}</div>
-        <div className="text-muted-foreground text-sm">{detail}</div>
+        <div className="flex items-center gap-2 truncate font-medium">{title}</div>
+        <div className="text-muted-foreground truncate text-sm">{detail}</div>
       </div>
-      {aside}
+      <div className="shrink-0">{aside}</div>
       <ChevronRightIcon className="text-muted-foreground size-4 shrink-0" />
     </Link>
   </li>

@@ -72,6 +72,7 @@ export const vaccination = defineRecordType({
   label: "Vaccination",
   pluralLabel: "Vaccinations",
   description: "A vaccine dose administered, with when the next one is due.",
+  icon: SyringeIcon, // optional; lists show a generic document icon otherwise
 
   schema: z.strictObject({
     vaccine: z.string().trim().min(1, "Required"),
@@ -88,7 +89,7 @@ export const vaccination = defineRecordType({
 });
 ```
 
-The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the record's detail page lists every field with its label, the tables show `summary`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
+The API validates incoming `data` with `schema`, the form renders inputs from `fields`, the record's detail page lists every field with its label, the tables show `summary` and `icon`, and the dashboard uses `dueDate`. None of those places mention a specific type. A test checks that every type's `fields` and `schema` list the same keys, so they cannot drift.
 
 **To add a record type:** copy the closest file in `src/shared/recordTypes/`, edit it, and add it to the list in `index.ts`. No migration, route or component changes.
 

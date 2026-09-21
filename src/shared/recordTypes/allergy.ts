@@ -1,3 +1,4 @@
+import { ShieldAlertIcon } from "lucide-react";
 import { z } from "zod";
 import { optionalText } from "@/shared/schemas/common";
 import { defineRecordType } from "./defineRecordType";
@@ -14,6 +15,7 @@ export const allergy = defineRecordType({
   pluralLabel: "Allergies",
   description:
     "A known allergy or sensitivity. Has no due date; it is a standing fact about the pet.",
+  icon: ShieldAlertIcon,
 
   schema: z.strictObject({
     allergen: z.string().trim().min(1, "Required"),

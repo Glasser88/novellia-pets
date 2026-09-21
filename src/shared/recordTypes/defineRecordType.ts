@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import { z } from "zod";
 
 /** One input in the "add record" form. */
@@ -24,6 +25,8 @@ export interface RecordType<Schema extends z.ZodObject = z.ZodObject> {
   label: string;
   pluralLabel: string;
   description: string;
+  /** Shown beside the record in lists. Optional; a generic document icon is used otherwise. */
+  icon?: LucideIcon;
   schema: Schema;
   fields: FieldDef[];
   /**

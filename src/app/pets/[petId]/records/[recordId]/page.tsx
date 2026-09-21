@@ -4,6 +4,7 @@ import { PencilIcon } from "lucide-react";
 import { CareStatusBadge } from "@/components/care-status-badge";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { formatFieldValue } from "@/components/records/record-field-value";
+import { RecordTypeIcon } from "@/components/records/record-type-icon";
 import { SectionCard } from "@/components/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,18 +48,21 @@ const RecordPage = async ({ params }: PageProps<"/pets/[petId]/records/[recordId
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <Link
-            href={petPath}
-            className="text-muted-foreground hover:text-foreground w-fit text-sm hover:underline"
-          >
-            {pet.name}
-          </Link>
-          <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold">
-            {record.title}
-            <Badge variant="outline">{type.label}</Badge>
-            {record.dueDate && <CareStatusBadge status={careStatus(record.dueDate, today)} />}
-          </h1>
+        <div className="flex items-center gap-4">
+          <RecordTypeIcon type={type} size="lg" />
+          <div className="flex flex-col gap-1">
+            <Link
+              href={petPath}
+              className="text-muted-foreground hover:text-foreground w-fit text-sm hover:underline"
+            >
+              {pet.name}
+            </Link>
+            <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold">
+              {record.title}
+              <Badge variant="outline">{type.label}</Badge>
+              {record.dueDate && <CareStatusBadge status={careStatus(record.dueDate, today)} />}
+            </h1>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

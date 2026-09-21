@@ -1,5 +1,6 @@
 import { CareStatusBadge } from "@/components/care-status-badge";
 import { ListRow } from "@/components/list-row";
+import { RecordTypeIcon } from "@/components/records/record-type-icon";
 import { formatDate } from "@/lib/format";
 import type { CareItem } from "@/shared/care";
 import { describeDue } from "@/shared/care";
@@ -16,6 +17,7 @@ export const CareList = ({ items, today }: CareListProps) => (
       <ListRow
         key={record.id}
         href={`/pets/${pet.id}/records/${record.id}`}
+        leading={<RecordTypeIcon type={getRecordType(record.type)} />}
         title={
           <span className="truncate">
             {pet.name}

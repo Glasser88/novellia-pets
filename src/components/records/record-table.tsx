@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CareStatusBadge } from "@/components/care-status-badge";
+import { RecordTypeIcon } from "@/components/records/record-type-icon";
 import { Badge } from "@/components/ui/badge";
 import { LinkTableRow } from "@/components/ui/link-table-row";
 import {
@@ -28,10 +29,10 @@ export const RecordTable = ({ rows, today, showPet = false }: RecordTableProps) 
   <Table>
     <TableHeader>
       <TableRow>
-        <TableHead>Date</TableHead>
+        <TableHead>Record</TableHead>
         {showPet && <TableHead>Pet</TableHead>}
         <TableHead>Type</TableHead>
-        <TableHead>Record</TableHead>
+        <TableHead>Date</TableHead>
         <TableHead>Due</TableHead>
         <TableHead>Status</TableHead>
       </TableRow>
@@ -42,7 +43,20 @@ export const RecordTable = ({ rows, today, showPet = false }: RecordTableProps) 
         const summary = summarizeRecordData(record.type, record.data);
         return (
           <LinkTableRow key={record.id} href={`/pets/${pet.id}/records/${record.id}`}>
-            <TableCell className="whitespace-nowrap">{formatDate(record.date)}</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-3">
+                <RecordTypeIcon type={type} />
+                <div>
+                  <Link
+                    href={`/pets/${pet.id}/records/${record.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {record.title}
+                  </Link>
+                  {summary && <div className="text-muted-foreground text-sm">{summary}</div>}
+                </div>
+              </div>
+            </TableCell>
             {showPet && (
               <TableCell>
                 <Link href={`/pets/${pet.id}`} className="font-medium hover:underline">
@@ -53,15 +67,7 @@ export const RecordTable = ({ rows, today, showPet = false }: RecordTableProps) 
             <TableCell>
               <Badge variant="outline">{type.label}</Badge>
             </TableCell>
-            <TableCell>
-              <Link
-                href={`/pets/${pet.id}/records/${record.id}`}
-                className="font-medium hover:underline"
-              >
-                {record.title}
-              </Link>
-              {summary && <div className="text-muted-foreground text-sm">{summary}</div>}
-            </TableCell>
+            <TableCell className="whitespace-nowrap">{formatDate(record.date)}</TableCell>
             <TableCell className="whitespace-nowrap">
               {record.dueDate ? formatDate(record.dueDate) : "—"}
             </TableCell>

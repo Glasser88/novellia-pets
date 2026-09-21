@@ -1,3 +1,4 @@
+import { StethoscopeIcon } from "lucide-react";
 import { z } from "zod";
 import { optionalIsoDate, optionalText } from "@/shared/schemas/common";
 import { defineRecordType } from "./defineRecordType";
@@ -7,6 +8,7 @@ export const vetVisit = defineRecordType({
   label: "Vet visit",
   pluralLabel: "Vet visits",
   description: "An appointment, exam, or procedure at a clinic.",
+  icon: StethoscopeIcon,
 
   schema: z.strictObject({
     clinic: optionalText(),

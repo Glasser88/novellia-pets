@@ -1,3 +1,4 @@
+import { SyringeIcon } from "lucide-react";
 import { z } from "zod";
 import { optionalIsoDate, optionalText } from "@/shared/schemas/common";
 import { defineRecordType } from "./defineRecordType";
@@ -7,6 +8,7 @@ export const vaccination = defineRecordType({
   label: "Vaccination",
   pluralLabel: "Vaccinations",
   description: "A vaccine dose administered, with when the next one is due.",
+  icon: SyringeIcon,
 
   schema: z.strictObject({
     vaccine: z.string().trim().min(1, "Required"),
