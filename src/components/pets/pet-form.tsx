@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FormField } from "@/components/form-field";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, ApiError, fieldErrorsFrom } from "@/lib/api";
-import { petInputSchema, speciesLabels, speciesValues, type PetDto } from "@/shared/schemas/pet";
+import { petInputSchema, speciesLabels, speciesValues, type Pet } from "@/shared/schemas/pet";
 
 /** What the inputs hold: always strings, exactly as the user typed them. */
 interface PetFormValues {
@@ -20,33 +21,33 @@ interface PetFormValues {
   notes: string;
 }
 
-function valuesFromPet(pet?: PetDto): PetFormValues {
-  return {
-    name: pet?.name ?? "",
-    species: pet?.species ?? "DOG",
-    breed: pet?.breed ?? "",
-    dateOfBirth: pet?.dateOfBirth ?? "",
-    weightKg: pet?.weightKg?.toString() ?? "",
-    notes: pet?.notes ?? "",
-  };
-}
+const valuesFromPet = (pet?: Pet): PetFormValues => ({
+  name: pet?.name ?? "",
+  species: pet?.species ?? "DOG",
+  breed: pet?.breed ?? "",
+  dateOfBirth: pet?.dateOfBirth ?? "",
+  weightKg: pet?.weightKg?.toString() ?? "",
+  notes: pet?.notes ?? "",
+});
 
 interface PetFormProps {
   /** When set, the form edits this pet; otherwise it creates one. */
-  pet?: PetDto;
+  pet?: Pet;
+  /** Where Cancel goes, and where an edit returns to after saving (a new item opens its own page). */
+  returnTo: string;
 }
 
-export function PetForm({ pet }: PetFormProps) {
+export const PetForm = ({ pet, returnTo }: PetFormProps) => {
   const router = useRouter();
   const [values, setValues] = useState<PetFormValues>(() => valuesFromPet(pet));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  function setValue(field: keyof PetFormValues, value: string) {
+  const setValue = (field: keyof PetFormValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
-  }
+  };
 
-  async function handleSubmit(event: FormEvent) {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     // Same schema the server uses, so errors appear before a round-trip.
@@ -60,9 +61,10 @@ export function PetForm({ pet }: PetFormProps) {
     setErrors({});
     try {
       const saved = pet
-        ? await api<PetDto>(`/api/pets/${pet.id}`, { method: "PATCH", body: parsed.data })
-        : await api<PetDto>("/api/pets", { method: "POST", body: parsed.data });
-      router.push(`/pets/${saved.id}`);
+        ? await api<Pet>(`/api/pets/${pet.id}`, { method: "PATCH", body: parsed.data })
+        : await api<Pet>("/api/pets", { method: "POST", body: parsed.data });
+      // A new pet goes to its own page; an edited one returns to where the user came from.
+      router.push(pet ? returnTo : `/pets/${saved.id}`);
       router.refresh(); // re-run the server components that read this pet
     } catch (error) {
       if (error instanceof ApiError) {
@@ -73,15 +75,15 @@ export function PetForm({ pet }: PetFormProps) {
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <FormField id="name" label="Name" required error={errors.name}>
         <Input
           id="name"
           value={values.name}
-          onChange={(e) => setValue("name", e.target.value)}
+          onChange={(event) => setValue("name", event.target.value)}
           aria-invalid={Boolean(errors.name)}
           autoFocus
         />
@@ -91,7 +93,7 @@ export function PetForm({ pet }: PetFormProps) {
         <NativeSelect
           id="species"
           value={values.species}
-          onChange={(e) => setValue("species", e.target.value)}
+          onChange={(event) => setValue("species", event.target.value)}
         >
           {speciesValues.map((species) => (
             <option key={species} value={species}>
@@ -105,7 +107,7 @@ export function PetForm({ pet }: PetFormProps) {
         <Input
           id="breed"
           value={values.breed}
-          onChange={(e) => setValue("breed", e.target.value)}
+          onChange={(event) => setValue("breed", event.target.value)}
         />
       </FormField>
 
@@ -115,7 +117,7 @@ export function PetForm({ pet }: PetFormProps) {
             id="dateOfBirth"
             type="date"
             value={values.dateOfBirth}
-            onChange={(e) => setValue("dateOfBirth", e.target.value)}
+            onChange={(event) => setValue("dateOfBirth", event.target.value)}
             aria-invalid={Boolean(errors.dateOfBirth)}
           />
         </FormField>
@@ -127,7 +129,7 @@ export function PetForm({ pet }: PetFormProps) {
             step="0.1"
             min="0"
             value={values.weightKg}
-            onChange={(e) => setValue("weightKg", e.target.value)}
+            onChange={(event) => setValue("weightKg", event.target.value)}
             aria-invalid={Boolean(errors.weightKg)}
           />
         </FormField>
@@ -138,7 +140,7 @@ export function PetForm({ pet }: PetFormProps) {
           id="notes"
           rows={3}
           value={values.notes}
-          onChange={(e) => setValue("notes", e.target.value)}
+          onChange={(event) => setValue("notes", event.target.value)}
         />
       </FormField>
 
@@ -148,10 +150,10 @@ export function PetForm({ pet }: PetFormProps) {
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : pet ? "Save changes" : "Add pet"}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => router.back()}>
+        <Button variant="ghost" nativeButton={false} render={<Link href={returnTo} />}>
           Cancel
         </Button>
       </div>
     </form>
   );
-}
+};

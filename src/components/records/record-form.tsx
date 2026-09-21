@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FormField } from "@/components/form-field";
@@ -11,21 +12,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { api, ApiError, fieldErrorsFrom } from "@/lib/api";
 import { todayIso } from "@/lib/format";
 import { getRecordType, listRecordTypes, type AnyRecordType } from "@/shared/recordTypes";
-import { recordInputSchema, type RecordDto } from "@/shared/schemas/record";
+import { recordInputSchema, type MedicalRecord } from "@/shared/schemas/record";
 
 interface RecordFormProps {
   petId: string;
   /** When set, the form edits this record; otherwise it creates one. */
-  record?: RecordDto;
+  record?: MedicalRecord;
+  /** Where Cancel goes, and where an edit returns to after saving (a new item opens its own page). */
+  returnTo: string;
 }
 
 const recordTypes = listRecordTypes();
 
 /** Initial `data` inputs for a type: the record's values, or blanks. */
-function initialDataValues(
+const initialDataValues = (
   type: AnyRecordType,
   data?: Record<string, unknown>,
-): Record<string, FieldValue> {
+): Record<string, FieldValue> => {
   const values: Record<string, FieldValue> = {};
   for (const field of type.fields) {
     const existing = data?.[field.name];
@@ -36,13 +39,13 @@ function initialDataValues(
     }
   }
   return values;
-}
+};
 
 /** Turn raw input values into the JSON the API expects for `data`. */
-function dataFromValues(
+const dataFromValues = (
   type: AnyRecordType,
   values: Record<string, FieldValue>,
-): Record<string, unknown> {
+): Record<string, unknown> => {
   const data: Record<string, unknown> = {};
   for (const field of type.fields) {
     const value = values[field.name];
@@ -53,9 +56,9 @@ function dataFromValues(
     }
   }
   return data;
-}
+};
 
-export function RecordForm({ petId, record }: RecordFormProps) {
+export const RecordForm = ({ petId, record, returnTo }: RecordFormProps) => {
   const router = useRouter();
   const [typeKey, setTypeKey] = useState(record?.type ?? recordTypes[0].key);
   const type = getRecordType(typeKey);
@@ -67,17 +70,17 @@ export function RecordForm({ petId, record }: RecordFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  function changeType(nextKey: string) {
+  const changeType = (nextKey: string) => {
     setTypeKey(nextKey);
     setDataValues(initialDataValues(getRecordType(nextKey)));
     setErrors({});
-  }
+  };
 
-  function setDataValue(name: string, value: FieldValue) {
+  const setDataValue = (name: string, value: FieldValue) => {
     setDataValues((current) => ({ ...current, [name]: value }));
-  }
+  };
 
-  async function handleSubmit(event: FormEvent) {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     // Validate the shared fields and the type-specific `data` with the same
@@ -85,10 +88,10 @@ export function RecordForm({ petId, record }: RecordFormProps) {
     const base = recordInputSchema.safeParse({ type: typeKey, title, date, notes, data: {} });
     const data = type.schema.safeParse(dataFromValues(type, dataValues));
     if (!base.success || !data.success) {
-      setErrors({
-        ...(base.success ? {} : fieldErrorsFrom(base.error.issues)),
-        ...(data.success ? {} : fieldErrorsFrom(data.error.issues)),
-      });
+      const fieldErrors: Record<string, string> = {};
+      if (!base.success) Object.assign(fieldErrors, fieldErrorsFrom(base.error.issues));
+      if (!data.success) Object.assign(fieldErrors, fieldErrorsFrom(data.error.issues));
+      setErrors(fieldErrors);
       return;
     }
 
@@ -101,15 +104,17 @@ export function RecordForm({ petId, record }: RecordFormProps) {
         notes: base.data.notes,
         data: data.data,
       };
-      if (record) {
-        await api(`/api/pets/${petId}/records/${record.id}`, { method: "PATCH", body });
-      } else {
-        await api(`/api/pets/${petId}/records`, {
-          method: "POST",
-          body: { type: typeKey, ...body },
-        });
-      }
-      router.push(`/pets/${petId}`);
+      const saved = record
+        ? await api<MedicalRecord>(`/api/pets/${petId}/records/${record.id}`, {
+            method: "PATCH",
+            body,
+          })
+        : await api<MedicalRecord>(`/api/pets/${petId}/records`, {
+            method: "POST",
+            body: { type: typeKey, ...body },
+          });
+      // A new record goes to its own page; an edited one returns to where the user came from.
+      router.push(record ? returnTo : `/pets/${petId}/records/${saved.id}`);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError) {
@@ -120,10 +125,10 @@ export function RecordForm({ petId, record }: RecordFormProps) {
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <FormField
         id="type"
         label="Record type"
@@ -133,12 +138,12 @@ export function RecordForm({ petId, record }: RecordFormProps) {
         <NativeSelect
           id="type"
           value={typeKey}
-          onChange={(e) => changeType(e.target.value)}
+          onChange={(event) => changeType(event.target.value)}
           disabled={Boolean(record)}
         >
-          {recordTypes.map((t) => (
-            <option key={t.key} value={t.key}>
-              {t.label}
+          {recordTypes.map((recordType) => (
+            <option key={recordType.key} value={recordType.key}>
+              {recordType.label}
             </option>
           ))}
         </NativeSelect>
@@ -148,7 +153,7 @@ export function RecordForm({ petId, record }: RecordFormProps) {
         <Input
           id="title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(event) => setTitle(event.target.value)}
           aria-invalid={Boolean(errors.title)}
           autoFocus
         />
@@ -159,7 +164,7 @@ export function RecordForm({ petId, record }: RecordFormProps) {
           id="date"
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(event) => setDate(event.target.value)}
           aria-invalid={Boolean(errors.date)}
         />
       </FormField>
@@ -176,7 +181,12 @@ export function RecordForm({ petId, record }: RecordFormProps) {
       ))}
 
       <FormField id="notes" label="Notes" error={errors.notes}>
-        <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <Textarea
+          id="notes"
+          rows={3}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
       </FormField>
 
       {errors.form && <p className="text-destructive text-sm">{errors.form}</p>}
@@ -185,10 +195,10 @@ export function RecordForm({ petId, record }: RecordFormProps) {
         <Button type="submit" disabled={submitting}>
           {submitting ? "Saving…" : record ? "Save changes" : "Add record"}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => router.back()}>
+        <Button variant="ghost" nativeButton={false} render={<Link href={returnTo} />}>
           Cancel
         </Button>
       </div>
     </form>
   );
-}
+};

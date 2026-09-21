@@ -1,24 +1,27 @@
 import { notFound } from "next/navigation";
+import { FormPage } from "@/components/form-page";
 import { RecordForm } from "@/components/records/record-form";
 import { getCurrentUserId } from "@/server/currentUser";
-import { NotFoundError } from "@/server/errors";
-import { getRecord } from "@/server/records/service";
+import { findRecord } from "@/server/records/service";
 
-export default async function EditRecordPage({
-  params,
-}: PageProps<"/pets/[petId]/records/[recordId]/edit">) {
+const EditRecordPage = async ({ params }: PageProps<"/pets/[petId]/records/[recordId]/edit">) => {
   const { petId, recordId } = await params;
   const ownerId = await getCurrentUserId();
 
-  const record = await getRecord(ownerId, petId, recordId).catch((error) => {
-    if (error instanceof NotFoundError) notFound();
-    throw error;
-  });
+  const record = await findRecord(ownerId, petId, recordId);
+  if (!record) notFound();
+
+  const recordPath = `/pets/${petId}/records/${recordId}`;
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Edit record</h1>
-      <RecordForm petId={petId} record={record} />
-    </div>
+    <FormPage
+      title="Edit record"
+      sectionTitle="Record"
+      back={{ href: recordPath, label: record.title }}
+    >
+      <RecordForm petId={petId} record={record} returnTo={recordPath} />
+    </FormPage>
   );
-}
+};
+
+export default EditRecordPage;
