@@ -15,13 +15,7 @@ import { vaccination } from "./vaccination";
 describe("registry", () => {
   it("has unique, stable keys", () => {
     expect(new Set(recordTypeKeys).size).toBe(recordTypeKeys.length);
-    expect(recordTypeKeys).toEqual([
-      "vaccination",
-      "medication",
-      "vet_visit",
-      "allergy",
-      "weight_check",
-    ]);
+    expect(recordTypeKeys).toEqual(["vaccination", "medication", "vet_visit", "allergy"]);
   });
 
   it("looks up types by key and rejects unknown keys", () => {

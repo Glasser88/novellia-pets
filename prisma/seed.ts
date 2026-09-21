@@ -17,15 +17,15 @@ import { getCurrentUserId } from "@/server/currentUser";
 import type { RecordInput } from "@/shared/schemas/record";
 import { plural } from "@/lib/format";
 
-function daysFromToday(days: number): string {
+const daysFromToday = (days: number): string => {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
-}
+};
 
 type SeedRecord = Omit<RecordInput, "data"> & { data?: Record<string, unknown> };
 
-async function main() {
+const main = async () => {
   const ownerId = await getCurrentUserId();
 
   const existing = await prisma.pet.count({ where: { ownerId } });
@@ -109,24 +109,6 @@ async function main() {
         data: { allergen: "Chicken", reaction: "Itchy skin, ear infections", severity: "moderate" },
       },
     ],
-    [
-      milo.id,
-      {
-        type: "weight_check",
-        title: "Weigh-in",
-        date: daysFromToday(-180),
-        data: { weightKg: 11.8 },
-      },
-    ],
-    [
-      milo.id,
-      {
-        type: "weight_check",
-        title: "Weigh-in",
-        date: daysFromToday(-30),
-        data: { weightKg: 12.4 },
-      },
-    ],
 
     // Luna: on a medication with a refill due soon; vaccination up to date.
     [
@@ -176,24 +158,6 @@ async function main() {
         data: { clinic: "Exotic Pet Clinic", reason: "New pet exam", diagnosis: "Healthy." },
       },
     ],
-    [
-      pip.id,
-      {
-        type: "weight_check",
-        title: "Weigh-in",
-        date: daysFromToday(-150),
-        data: { weightKg: 0.9 },
-      },
-    ],
-    [
-      pip.id,
-      {
-        type: "weight_check",
-        title: "Weigh-in",
-        date: daysFromToday(-10),
-        data: { weightKg: 1.6 },
-      },
-    ],
   ];
 
   for (const [petId, record] of records) {
@@ -201,7 +165,7 @@ async function main() {
   }
 
   console.log(`Seeded 3 pets and ${records.length} records for the demo owner.`);
-}
+};
 
 main()
   .catch((error) => {

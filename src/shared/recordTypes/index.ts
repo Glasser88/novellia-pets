@@ -3,7 +3,6 @@ import { allergy } from "./allergy";
 import { medication } from "./medication";
 import { vaccination } from "./vaccination";
 import { vetVisit } from "./vetVisit";
-import { weightCheck } from "./weightCheck";
 
 export type { FieldDef, RecordType } from "./defineRecordType";
 export { defineRecordType } from "./defineRecordType";
@@ -16,7 +15,7 @@ export { defineRecordType } from "./defineRecordType";
  *
  * Order here is the display order in the UI.
  */
-const ALL_RECORD_TYPES = [vaccination, medication, vetVisit, allergy, weightCheck];
+const ALL_RECORD_TYPES = [vaccination, medication, vetVisit, allergy];
 
 // The registry holds every type with its specific `data` shape erased. The
 // only code that calls a type's `dueDate`/`summary` is below, and it passes
@@ -24,11 +23,14 @@ const ALL_RECORD_TYPES = [vaccination, medication, vetVisit, allergy, weightChec
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyRecordType = RecordType<any>;
 
-export const recordTypes: ReadonlyMap<string, AnyRecordType> = new Map(
+/** Lookup by key. Partial, because an unknown key (from the URL, say) has no entry. */
+const recordTypesByKey: Partial<Record<string, AnyRecordType>> = Object.fromEntries(
   ALL_RECORD_TYPES.map((type) => [type.key, type]),
 );
 
 export const recordTypeKeys = ALL_RECORD_TYPES.map((type) => type.key) as [string, ...string[]];
+
+export const isRecordTypeKey = (key: string): boolean => key in recordTypesByKey;
 
 export class UnknownRecordTypeError extends Error {
   constructor(key: string) {
@@ -37,36 +39,36 @@ export class UnknownRecordTypeError extends Error {
   }
 }
 
-export function getRecordType(key: string): AnyRecordType {
-  const type = recordTypes.get(key);
-  if (!type) throw new UnknownRecordTypeError(key);
-  return type;
-}
+export const getRecordType = (key: string): AnyRecordType => {
+  const type = recordTypesByKey[key];
 
-export function listRecordTypes(): AnyRecordType[] {
-  return [...recordTypes.values()];
-}
+  if (!type) throw new UnknownRecordTypeError(key);
+
+  return type;
+};
+
+/** Every type, in display order. */
+export const listRecordTypes = (): AnyRecordType[] => [...ALL_RECORD_TYPES];
 
 /**
  * Validate `data` against its type's schema and derive the due date. This is
  * the one place the registry is applied to incoming data; the server calls it
  * on create and update.
  */
-export function parseRecordData(
+export const parseRecordData = (
   typeKey: string,
   data: unknown,
   recordDate: string,
-): { data: Record<string, unknown>; dueDate: string | null } {
+): { data: Record<string, unknown>; dueDate: string | null } => {
   const type = getRecordType(typeKey);
   const parsed = type.schema.parse(data ?? {});
   const dueDate = type.dueDate ? type.dueDate(parsed, recordDate) : null;
+
   return { data: parsed, dueDate };
-}
+};
 
 /** One-line summary of a stored record's `data` for list views. */
-export function summarizeRecordData(
+export const summarizeRecordData = (
   typeKey: string,
   data: Record<string, unknown>,
-): string | undefined {
-  return getRecordType(typeKey).summary?.(data);
-}
+): string | undefined => getRecordType(typeKey).summary?.(data);
