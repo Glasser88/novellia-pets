@@ -2,7 +2,18 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* `dark:` applies under an explicit <html class="dark">, or when the system
+   prefers dark and no explicit "light" choice has been made. */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not(.light, .light *)) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -10,19 +21,6 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -46,83 +44,68 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-card: var(--shadow-card);
 }
 
 body {
   font-family: var(--font-sans);
 }
 
-/* Theme: shadcn neutrals with Novellia's palette. Deep burgundy (hue ~15)
-   for primary actions and the active chip; a warm off-white page; red-orange
-   only for focus rings. Destructive red and status colours are untouched so
-   they keep their meaning next to the brand colour. */
+/* Theme. One variable set: light values on :root, dark values under the
+   `dark` variant above (so the dark block is written once and applies both to
+   an explicit choice and to the system preference). Off-white page with slate
+   text, mint primary, near-black navy in dark mode. Primary text is dark
+   rather than white because white on mint fails contrast for button labels. */
 :root {
-  --background: oklch(0.985 0.003 60);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.34 0.13 18);
-  --primary-foreground: oklch(0.985 0.005 60);
-  --secondary: oklch(0.95 0.02 30);
-  --secondary-foreground: oklch(0.34 0.13 18);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.02 30);
-  --accent-foreground: oklch(0.34 0.13 18);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.65 0.2 32);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  color-scheme: light;
+  --background: rgb(247 248 249);
+  --foreground: rgb(15 23 42);
+  --card: rgb(255 255 255);
+  --card-foreground: rgb(15 23 42);
+  --popover: rgb(255 255 255);
+  --popover-foreground: rgb(15 23 42);
+  --primary: rgb(0 208 132);
+  --primary-foreground: rgb(15 23 42);
+  --secondary: rgb(243 244 246);
+  --secondary-foreground: rgb(15 23 42);
+  --muted: rgb(243 244 246);
+  --muted-foreground: rgb(100 116 139);
+  --accent: color-mix(in srgb, rgb(0 208 132) 14%, white);
+  --accent-foreground: rgb(5 122 85);
+  --destructive: rgb(220 38 38);
+  --border: rgb(229 231 235);
+  --input: rgb(229 231 235);
+  --ring: rgb(0 208 132);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* Cards are flat in light mode (a border is enough on an off-white page).
+     A zero shadow rather than `none`, which is invalid inside Tailwind's
+     combined ring + shadow list and would drop the ring too. */
+  --shadow-card: 0 0 #0000;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.72 0.17 30);
-  --primary-foreground: oklch(0.15 0.03 20);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.3 0.05 20);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.2 32);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  @variant dark {
+    color-scheme: dark;
+    --background: rgb(10 15 25);
+    --foreground: rgb(226 232 240);
+    --card: rgb(20 25 35);
+    --card-foreground: rgb(226 232 240);
+    --popover: rgb(15 20 30);
+    --popover-foreground: rgb(226 232 240);
+    --primary: rgb(0 208 132);
+    --primary-foreground: rgb(10 15 25);
+    --secondary: rgb(30 35 50);
+    --secondary-foreground: rgb(226 232 240);
+    --muted: rgb(30 35 50);
+    --muted-foreground: rgb(148 163 184);
+    --accent: color-mix(in srgb, rgb(52 211 153) 22%, rgb(20 25 35));
+    --accent-foreground: rgb(110 231 183);
+    --destructive: rgb(248 113 113);
+    --border: rgb(40 45 60);
+    --input: rgb(40 45 60);
+    --ring: rgb(0 208 132);
+    /* Dark surfaces swallow 1px borders, so cards use a shadow and a faint
+       top highlight to lift off the page instead. */
+    --shadow-card: 0 2px 16px rgb(0 0 0 / 0.4), 0 1px 0 rgb(255 255 255 / 0.04);
+  }
 }
 
 @layer base {
@@ -131,6 +114,12 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Tailwind's reset gives buttons the OS default cursor; links keep the
+     pointer. Use the pointer for everything clickable so it is consistent. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
   html {
     @apply font-sans;
