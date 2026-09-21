@@ -14,6 +14,13 @@ The brief left a lot open on purpose. This is what I decided, why, and what I wo
 
 Records that imply future care carry a due date, and the app is organised around what that makes visible. The reasoning is in the README ("The feature: care tracking"); the decision that makes it work is below under "The data model": `dueDate` is derived from a record's `data` by its type's rule on every write and stored as an indexed column, so the dashboard asks the database "what is due before this date" instead of unpacking JSON. The rules for what "overdue" and "due soon" mean live in one pure file (`src/shared/care.ts`), unit-tested without a database, and the server turns them into query windows in one place (`src/server/dueDates.ts`), so the dashboard counts, the dashboard lists and the records page filter cannot disagree.
 
+### Ideas I considered and set aside
+
+- **Weather-aware care.** Pull NOAA weather alerts (thunderstorms, heat waves, cold snaps) and map them to the pets that are sensitive to them: a nervous dog before a storm, an older cat or a brachycephalic breed in a heat wave, with a nudge like "keep Milo indoors this afternoon." I like this a lot, and it is where a product like this could become something people open every day. I set it aside because it turns a records app into one that gives care advice, and that advice needs veterinary input before it should reach an owner; it also needs the pet's location and a model of which conditions matter, neither of which the MVP has. It would build on the same due-date machinery (an alert is just a short-lived "due now").
+- **Weight trend.** A weight-check record type with a chart per pet. I had it in and took it out: with one owner and a few pets there is rarely enough data for a trend to mean anything, and the pet's current weight on its profile covers the common case. It comes back the moment the app has recurring weigh-ins.
+- **Reminders.** Email or push notifications for what is due. The data is already there (every due date is an indexed column), so this is a scheduled job plus a mail provider. It is the most obvious next feature and deliberately not in an MVP that has no accounts to send to.
+- **Sharing with a vet.** A read-only link or PDF export of a pet's history. Useful and small, but it is a distribution feature rather than a product decision, so it did not compete for the "one feature" slot.
+
 ## Stack
 
 **Next.js App Router for both the UI and the API.** The team works in React and Node; Next gives both in one runtime, one `npm run dev`, one container. The API layer (`src/app/api`) is deliberately thin, and all logic lives in `src/server`, so moving to a separate Express service or Lambda handlers would only replace the handlers.
