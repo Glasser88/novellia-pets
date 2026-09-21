@@ -7,7 +7,7 @@ The brief left a lot open on purpose. This is what I decided, why, and what I wo
 - **One owner, no login.** Everything runs as a single demo user. The data model and every service already take an owner, so adding authentication is additive (see below).
 - **"State of all pets" means "what needs attention."** The dashboard is organised around care that is overdue or due soon, not around raw counts.
 - **Record types are a growing set; species is not.** So `type` is an application-level registry key and `species` is a database enum.
-- **Dates are calendar dates.** A vaccination happened on a day, not at an instant. Dates are `DATE` columns and cross the API as `YYYY-MM-DD` strings.
+- **Dates are calendar dates.** A vaccination happened on a day, not at an instant. Dates are `DATE` columns and cross the API as `YYYY-MM-DD` strings. "Today" is judged in one time zone for the whole app (the server's `TZ`; Docker sets it, since containers default to UTC), which is right for one owner. A per-user time zone belongs on the user profile that arrives with authentication.
 - **Search is simple.** Case-insensitive substring match on a couple of columns is enough for an owner with a handful of pets.
 
 ## The feature I chose: care tracking

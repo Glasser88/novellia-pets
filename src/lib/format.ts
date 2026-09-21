@@ -11,8 +11,18 @@ const parseIsoDate = (isoDate: string): Date => {
   return new Date(Date.UTC(year, month - 1, day));
 };
 
-/** Today's calendar date in ISO form. */
-export const todayIso = (): string => new Date().toISOString().slice(0, 10);
+/**
+ * Today's calendar date in ISO form, in the runtime's time zone: the browser's
+ * on the client, the process's (`TZ`) on the server. Not `toISOString()`,
+ * which is UTC and would roll over to tomorrow in the evening for anyone
+ * west of Greenwich.
+ */
+export const todayIso = (): string => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+};
 
 /** "Mar 1, 2027". Locale is fixed so server and client render the same text. */
 export const formatDate = (isoDate: string): string =>

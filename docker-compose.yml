@@ -25,6 +25,8 @@ services:
     environment:
       # Inside the Compose network the database is reached by service name.
       DATABASE_URL: postgresql://novellia:novellia@db:5432/novellia
+      # Containers default to UTC; "today" must be judged in the owner's zone.
+      TZ: ${TZ:-America/Edmonton}
     depends_on:
       db:
         condition: service_healthy

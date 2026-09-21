@@ -15,13 +15,9 @@ import { createPet } from "@/server/pets/service";
 import { createRecord } from "@/server/records/service";
 import { getCurrentUserId } from "@/server/currentUser";
 import type { RecordInput } from "@/shared/schemas/record";
-import { plural } from "@/lib/format";
+import { addDays, plural, todayIso } from "@/lib/format";
 
-const daysFromToday = (days: number): string => {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-};
+const daysFromToday = (days: number): string => addDays(todayIso(), days);
 
 type SeedRecord = Omit<RecordInput, "data"> & { data?: Record<string, unknown> };
 
