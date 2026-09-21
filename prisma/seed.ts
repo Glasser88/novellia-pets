@@ -154,6 +154,79 @@ const main = async () => {
         data: { clinic: "Exotic Pet Clinic", reason: "New pet exam", diagnosis: "Healthy." },
       },
     ],
+
+    // Older history with no follow-up, so the records page has more than one
+    // page and the "No follow-up" state is visible. None of these change a
+    // pet's status.
+    [
+      milo.id,
+      {
+        type: "vet_visit",
+        title: "Ear infection",
+        date: daysFromToday(-120),
+        notes: "Cleared up after a week of drops.",
+        data: {
+          clinic: "Riverside Animal Hospital",
+          veterinarian: "Dr. Patel",
+          reason: "Scratching at ears",
+          diagnosis: "Otitis externa, left ear.",
+        },
+      },
+    ],
+    [
+      milo.id,
+      {
+        type: "medication",
+        title: "Ear drops",
+        date: daysFromToday(-120),
+        data: {
+          name: "Otomax",
+          dosage: "4 drops, left ear",
+          frequency: "twice_daily",
+          endDate: daysFromToday(-113),
+        },
+      },
+    ],
+    [
+      milo.id,
+      {
+        type: "vet_visit",
+        title: "Puppy vaccines visit",
+        date: daysFromToday(-700),
+        data: {
+          clinic: "Riverside Animal Hospital",
+          reason: "Puppy series",
+          diagnosis: "Healthy.",
+        },
+      },
+    ],
+    [
+      luna.id,
+      {
+        type: "vet_visit",
+        title: "Dental cleaning",
+        date: daysFromToday(-300),
+        data: {
+          clinic: "Riverside Animal Hospital",
+          veterinarian: "Dr. Okafor",
+          reason: "Dental cleaning under anaesthesia",
+          diagnosis: "Two extractions. Recovered well.",
+        },
+      },
+    ],
+    [
+      luna.id,
+      {
+        type: "allergy",
+        title: "Flea allergy",
+        date: daysFromToday(-400),
+        data: {
+          allergen: "Flea saliva",
+          reaction: "Hair loss at the base of the tail",
+          severity: "mild",
+        },
+      },
+    ],
   ];
 
   for (const [petId, record] of records) {
