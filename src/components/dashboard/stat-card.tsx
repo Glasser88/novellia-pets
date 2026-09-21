@@ -1,8 +1,13 @@
-import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import { SectionCard } from "@/components/section-card";
 
 interface StatCardProps {
   label: string;
   value: number;
+  icon: LucideIcon;
+  /** Where the number leads, e.g. the records page filtered to what it counts. */
+  href: string;
   tone?: "default" | "danger" | "warning";
 }
 
@@ -12,13 +17,17 @@ const TONES = {
   warning: "text-amber-700 dark:text-amber-300",
 };
 
-export function StatCard({ label, value, tone = "default" }: StatCardProps) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-1">
-        <span className="text-muted-foreground text-sm">{label}</span>
-        <span className={`text-3xl font-semibold ${value > 0 ? TONES[tone] : ""}`}>{value}</span>
-      </CardContent>
-    </Card>
-  );
-}
+/** A single number in the same frame as every other section; the whole card is a link. */
+export const StatCard = ({ label, value, icon: Icon, href, tone = "default" }: StatCardProps) => (
+  <Link href={href} className="block rounded-xl">
+    <SectionCard
+      title={label}
+      action={<Icon className="text-muted-foreground size-5" />}
+      className="hover:ring-primary/50 h-full transition-shadow"
+    >
+      <span className={`text-3xl font-semibold tabular-nums ${value > 0 ? TONES[tone] : ""}`}>
+        {value}
+      </span>
+    </SectionCard>
+  </Link>
+);

@@ -15,10 +15,8 @@ const STYLES: Record<CareStatus | "ok", string> = {
   ok: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
 };
 
-export function CareStatusBadge({ status }: { status: CareStatus | "ok" }) {
-  return (
-    <Badge variant="outline" className={`border-transparent ${STYLES[status]}`}>
-      {LABELS[status]}
-    </Badge>
-  );
-}
+export const CareStatusBadge = ({ status }: { status: CareStatus | "ok" }) => (
+  <Badge variant="outline" className={`border-transparent ${STYLES[status]}`}>
+    {LABELS[status]}
+  </Badge>
+);
