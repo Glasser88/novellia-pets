@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
-import { PetCard } from "@/components/pets/pet-card";
+import { PetTable } from "@/components/pets/pet-table";
 import { SearchForm } from "@/components/search-form";
+import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
+import { todayIso } from "@/lib/format";
 import { getCurrentUserId } from "@/server/currentUser";
-import { listPets } from "@/server/pets/service";
+import { listPetOverviews } from "@/server/pets/service";
 
-export default async function PetsPage({ searchParams }: PageProps<"/pets">) {
+const PetsPage = async ({ searchParams }: PageProps<"/pets">) => {
   const { q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const ownerId = await getCurrentUserId();
-  const pets = await listPets(ownerId, { query });
+  const pets = await listPetOverviews(ownerId, todayIso(), { query });
 
   return (
     <div className="flex flex-col gap-6">
@@ -23,17 +25,19 @@ export default async function PetsPage({ searchParams }: PageProps<"/pets">) {
 
       <SearchForm action="/pets" placeholder="Search by name or breed" defaultValue={query} />
 
-      {pets.length === 0 ? (
-        <p className="text-muted-foreground">
-          {query ? `No pets match "${query}".` : "No pets yet. Add your first one to get started."}
-        </p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {pets.map((pet) => (
-            <PetCard key={pet.id} pet={pet} />
-          ))}
-        </div>
-      )}
+      <SectionCard
+        title="All pets"
+        hint="Every pet you're tracking. Open one to see their records or make changes."
+        count={pets.length}
+        isEmpty={pets.length === 0}
+        emptyMessage={
+          query ? `No pets match "${query}".` : "No pets yet. Add your first one to get started."
+        }
+      >
+        <PetTable pets={pets} />
+      </SectionCard>
     </div>
   );
-}
+};
+
+export default PetsPage;

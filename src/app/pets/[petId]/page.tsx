@@ -2,33 +2,30 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { SpeciesIcon } from "@/components/pets/species-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RecordTable } from "@/components/records/record-table";
-import { RecordTypeFilter } from "@/components/records/record-type-filter";
-import { SearchForm } from "@/components/search-form";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatAge, formatDate } from "@/lib/format";
+import { RecordFilters } from "@/components/records/record-filters";
+import { SectionCard } from "@/components/section-card";
+import { formatAge, formatDate, todayIso } from "@/lib/format";
 import { getCurrentUserId } from "@/server/currentUser";
-import { NotFoundError } from "@/server/errors";
-import { getPet } from "@/server/pets/service";
+import { findPet } from "@/server/pets/service";
 import { listRecords } from "@/server/records/service";
-import { recordTypes } from "@/shared/recordTypes";
+import { isRecordTypeKey } from "@/shared/recordTypes";
 import { speciesLabels } from "@/shared/schemas/pet";
 
-export default async function PetPage({ params, searchParams }: PageProps<"/pets/[petId]">) {
+const PetPage = async ({ params, searchParams }: PageProps<"/pets/[petId]">) => {
   const { petId } = await params;
   const { type, q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const ownerId = await getCurrentUserId();
 
   // Only filter by a type the registry knows; anything else shows all.
-  const typeFilter = typeof type === "string" && recordTypes.has(type) ? type : undefined;
+  const typeFilter = typeof type === "string" && isRecordTypeKey(type) ? type : undefined;
 
-  const pet = await getPet(ownerId, petId).catch((error) => {
-    if (error instanceof NotFoundError) notFound();
-    throw error;
-  });
+  const pet = await findPet(ownerId, petId);
+  if (!pet) notFound();
   const records = await listRecords(ownerId, petId, { type: typeFilter, query });
 
   const facts: [string, string | null][] = [
@@ -44,7 +41,8 @@ export default async function PetPage({ params, searchParams }: PageProps<"/pets
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-4">
+          <SpeciesIcon species={pet.species} size="lg" />
           <h1 className="flex items-center gap-3 text-2xl font-semibold">
             {pet.name}
             <Badge variant="secondary">{speciesLabels[pet.species]}</Badge>
@@ -67,43 +65,50 @@ export default async function PetPage({ params, searchParams }: PageProps<"/pets
         </div>
       </div>
 
-      <Card>
-        <CardContent>
-          <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-            {facts.map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4 sm:justify-start">
-                <dt className="text-muted-foreground w-24 shrink-0">{label}</dt>
-                <dd>{value ?? "—"}</dd>
-              </div>
-            ))}
-            {pet.notes && (
-              <div className="sm:col-span-2">
-                <dt className="text-muted-foreground">Notes</dt>
-                <dd className="whitespace-pre-wrap">{pet.notes}</dd>
-              </div>
-            )}
-          </dl>
-        </CardContent>
-      </Card>
+      <SectionCard title="Details" hint="What you know about this pet. Edit to change it.">
+        <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+          {facts.map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-4 sm:justify-start">
+              <dt className="text-muted-foreground w-24 shrink-0">{label}</dt>
+              <dd>{value ?? "—"}</dd>
+            </div>
+          ))}
+          {pet.notes && (
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Notes</dt>
+              <dd className="whitespace-pre-wrap">{pet.notes}</dd>
+            </div>
+          )}
+        </dl>
+      </SectionCard>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold">Medical records</h2>
-          <Button nativeButton={false} render={<Link href={`/pets/${pet.id}/records/new`} />}>
+      <RecordFilters action={`/pets/${pet.id}`} type={typeFilter} query={query} />
+
+      <SectionCard
+        title="Medical records"
+        hint="Everything logged for this pet, newest first. Open a record for the full details."
+        count={records.length}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/pets/${pet.id}/records/new`} />}
+          >
             <PlusIcon /> Add record
           </Button>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <RecordTypeFilter basePath={`/pets/${pet.id}`} selected={typeFilter} query={query} />
-          <SearchForm
-            action={`/pets/${pet.id}`}
-            placeholder="Search records"
-            defaultValue={query}
-            hidden={{ type: typeFilter }}
-          />
-        </div>
-        <RecordTable petId={pet.id} records={records} />
-      </section>
+        }
+        isEmpty={records.length === 0}
+        emptyMessage={
+          typeFilter || query
+            ? "No records match this filter."
+            : `No records yet. Add ${pet.name}'s first vaccination, allergy or visit.`
+        }
+      >
+        <RecordTable rows={records.map((record) => ({ record, pet }))} today={todayIso()} />
+      </SectionCard>
     </div>
   );
-}
+};
+
+export default PetPage;

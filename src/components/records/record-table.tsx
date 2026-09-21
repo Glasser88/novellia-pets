@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { CareStatusBadge } from "@/components/care-status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { LinkTableRow } from "@/components/ui/link-table-row";
 import {
   Table,
   TableBody,
@@ -11,69 +11,70 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/format";
+import { careStatus } from "@/shared/care";
 import { getRecordType, summarizeRecordData } from "@/shared/recordTypes";
-import type { RecordDto } from "@/shared/schemas/record";
+import type { Pet } from "@/shared/schemas/pet";
+import type { MedicalRecord } from "@/shared/schemas/record";
 
 interface RecordTableProps {
-  petId: string;
-  records: RecordDto[];
+  rows: { record: MedicalRecord; pet: Pet }[];
+  /** Today's ISO date, for judging how urgent each due date is. */
+  today: string;
+  /** Show which pet each record belongs to (for lists across pets). */
+  showPet?: boolean;
 }
 
-export function RecordTable({ petId, records }: RecordTableProps) {
-  if (records.length === 0) {
-    return <p className="text-muted-foreground text-sm">No records match.</p>;
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Record</TableHead>
-          <TableHead>Due</TableHead>
-          <TableHead className="w-0" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {records.map((record) => {
-          const type = getRecordType(record.type);
-          const summary = summarizeRecordData(record.type, record.data);
-          return (
-            <TableRow key={record.id}>
-              <TableCell className="whitespace-nowrap">{formatDate(record.date)}</TableCell>
+export const RecordTable = ({ rows, today, showPet = false }: RecordTableProps) => (
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Date</TableHead>
+        {showPet && <TableHead>Pet</TableHead>}
+        <TableHead>Type</TableHead>
+        <TableHead>Record</TableHead>
+        <TableHead>Due</TableHead>
+        <TableHead>Status</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {rows.map(({ record, pet }) => {
+        const type = getRecordType(record.type);
+        const summary = summarizeRecordData(record.type, record.data);
+        return (
+          <LinkTableRow key={record.id} href={`/pets/${pet.id}/records/${record.id}`}>
+            <TableCell className="whitespace-nowrap">{formatDate(record.date)}</TableCell>
+            {showPet && (
               <TableCell>
-                <Badge variant="outline">{type.label}</Badge>
+                <Link href={`/pets/${pet.id}`} className="font-medium hover:underline">
+                  {pet.name}
+                </Link>
               </TableCell>
-              <TableCell>
-                <div className="font-medium">{record.title}</div>
-                {summary && <div className="text-muted-foreground text-sm">{summary}</div>}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {record.dueDate ? formatDate(record.dueDate) : "—"}
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    nativeButton={false}
-                    render={<Link href={`/pets/${petId}/records/${record.id}/edit`} />}
-                  >
-                    Edit
-                  </Button>
-                  <ConfirmDeleteButton
-                    size="sm"
-                    apiPath={`/api/pets/${petId}/records/${record.id}`}
-                    title={`Delete "${record.title}"?`}
-                    description="This removes the record permanently."
-                  />
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
-}
+            )}
+            <TableCell>
+              <Badge variant="outline">{type.label}</Badge>
+            </TableCell>
+            <TableCell>
+              <Link
+                href={`/pets/${pet.id}/records/${record.id}`}
+                className="font-medium hover:underline"
+              >
+                {record.title}
+              </Link>
+              {summary && <div className="text-muted-foreground text-sm">{summary}</div>}
+            </TableCell>
+            <TableCell className="whitespace-nowrap">
+              {record.dueDate ? formatDate(record.dueDate) : "—"}
+            </TableCell>
+            <TableCell>
+              {record.dueDate ? (
+                <CareStatusBadge status={careStatus(record.dueDate, today)} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </TableCell>
+          </LinkTableRow>
+        );
+      })}
+    </TableBody>
+  </Table>
+);
